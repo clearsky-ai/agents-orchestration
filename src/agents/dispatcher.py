@@ -1,6 +1,7 @@
-from autogen_core import MessageContext
+from autogen_core import MessageContext, SingleThreadedAgentRuntime, TypeSubscription
 from autogen_core import RoutedAgent, TopicId, message_handler
 
+from agents.base import AIAgent
 from primitives.contracts import AgentResponse, AgentsTask, ChatInput
 
 
@@ -47,3 +48,32 @@ class DispatcherAgent(RoutedAgent):
             ChatInput(content=next_input),
             topic_id=TopicId(self._orchestration_agent_topic_type, source=self.id.key),
         )
+
+
+async def register_dispatcher_agent(
+    runtime: SingleThreadedAgentRuntime,
+    description: str,
+    agent_topic_type: str,
+    orchestration_agent_topic_type: str,
+    input_channel_subscribe_method: callable,
+    output_channel_publish_method: callable,
+) -> DispatcherAgent:
+
+    dispatcher_agent = await DispatcherAgent.register(
+        runtime,
+        type=agent_topic_type,  # Using the topic type as the agent type.
+        factory=lambda: DispatcherAgent(
+            description=description,
+            orchestration_agent_topic_type=orchestration_agent_topic_type,
+            input_channel_subscribe_method=input_channel_subscribe_method,
+            output_channel_publish_method=output_channel_publish_method,
+        ),
+    )
+
+    await runtime.add_subscription(
+        TypeSubscription(
+            topic_type=agent_topic_type,
+            agent_type=dispatcher_agent.type,
+        )
+    )
+    return dispatcher_agent

@@ -10,8 +10,6 @@ async def register_process_analysis_expert(
     model_client: models.ChatCompletionClient,
     agent_topic_type: str,
     user_topic_type: str,
-    output_channel_publish_method: callable,
-    input_channel_subscribe_method: callable,
 ) -> AIAgent:
     pmo_mcp_client = PmoMcpClient()
     agent = await AIAgent.register(
