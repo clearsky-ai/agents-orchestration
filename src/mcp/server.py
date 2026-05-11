@@ -1,9 +1,19 @@
+from pathlib import Path
 import json
 import sqlite3
-from pathlib import Path
+
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
-server = FastMCP("pmo-mcp-server")
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(_REPO_ROOT / ".env")
+
+from src.mcp.cg_tools import register_cg_tools
+from src.mcp.cp_resources import register_cp_resources
+
+server = FastMCP("mcp-server")
+register_cp_resources(server)
+register_cg_tools(server)
 
 # --------------------Context Graph Tools/Resources--------------------
 
@@ -14,8 +24,7 @@ CURRENT_BUSINESS_DAY = "BD+2"
 db = sqlite3.connect(":memory:")
 db.row_factory = sqlite3.Row
 
-db.executescript(
-    """
+db.executescript("""
 CREATE TABLE tasks (
     task_id TEXT PRIMARY KEY,
     name TEXT, team TEXT, state TEXT,
@@ -25,12 +34,10 @@ CREATE TABLE activities (
     activity_id TEXT PRIMARY KEY,
     task_id TEXT, kind TEXT, actor TEXT, at TEXT
 );
-"""
-)
+""")
 
 DEPENDENCIES = []
 ALLOWED_TASK_COLUMNS = ["name", "team", "state", "business_day", "owner", "description"]
-
 
 def rows(cur):
     return [dict(row) for row in cur.fetchall()]
@@ -43,15 +50,8 @@ for t in _data["tasks"]:
     db.execute(
         "INSERT INTO tasks (task_id, name, team, state, business_day, owner, description) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (
-            t["task_id"],
-            t["name"],
-            t["team"],
-            t["state"],
-            t["business_day"],
-            t["owner"],
-            t["description"],
-        ),
+        (t["task_id"], t["name"], t["team"], t["state"],
+         t["business_day"], t["owner"], t["description"]),
     )
     for dep in t["upstream_dependencies"]:
         DEPENDENCIES.append({"upstream": dep, "downstream": t["task_id"]})
@@ -111,11 +111,9 @@ def process_status():
     """Today's business day, % complete, and number of in-progress tasks."""
     total = db.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"]
     completed = db.execute(
-        "SELECT COUNT(*) AS n FROM tasks WHERE state = 'complete'"
-    ).fetchone()["n"]
+        "SELECT COUNT(*) AS n FROM tasks WHERE state = 'complete'").fetchone()["n"]
     in_progress = db.execute(
-        "SELECT COUNT(*) AS n FROM tasks WHERE state = 'in_progress'"
-    ).fetchone()["n"]
+        "SELECT COUNT(*) AS n FROM tasks WHERE state = 'in_progress'").fetchone()["n"]
     return {
         "current_business_day": CURRENT_BUSINESS_DAY,
         "percent_complete": round(completed / total * 100, 1) if total else 0,
