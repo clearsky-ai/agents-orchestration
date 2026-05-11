@@ -40,11 +40,11 @@ class DispatcherAgent(RoutedAgent):
         next_input = self._input_channel_subscribe_method(
             "Please enter your next input: "
         )
-        if next_input.strip() == "" or next_input.strip().lower() == "Fuck off":
+        if next_input.strip() == "" or next_input.strip().lower() == "exit":
 
             self._output_channel_publish_method(
                 AgentResponse(
-                    context="Goodbye",
+                    context="Exiting...",
                     reply_to_topic_type=self._orchestration_agent_topic_type,
                 )
             )
