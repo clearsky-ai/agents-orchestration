@@ -2,7 +2,13 @@ from typing import List
 import asyncio
 
 
-from autogen_core import MessageContext, RoutedAgent, TopicId
+from autogen_core import (
+    MessageContext,
+    RoutedAgent,
+    SingleThreadedAgentRuntime,
+    TopicId,
+    TypeSubscription,
+)
 from autogen_core import message_handler
 from autogen_core.models import ChatCompletionClient
 
@@ -39,3 +45,27 @@ class OrchestrationAgent(RoutedAgent):
                 ]
             )
         return results
+
+
+async def register_orchestration_agent(
+    runtime: SingleThreadedAgentRuntime,
+    model_client: ChatCompletionClient,
+    agent_topic_type: str,
+    participant_topic_types: List[str],
+) -> OrchestrationAgent:
+    orchestration_agent = await OrchestrationAgent.register(
+        runtime,
+        type=agent_topic_type,
+        factory=lambda: OrchestrationAgent(
+            orchestration_topic_type=agent_topic_type,
+            participant_topic_types=participant_topic_types,
+            model_client=model_client,
+        ),
+    )
+    await runtime.add_subscription(
+        TypeSubscription(
+            topic_type=agent_topic_type,
+            agent_type=orchestration_agent.type,
+        )
+    )
+    return orchestration_agent

@@ -29,3 +29,10 @@ class ChatInput(BaseModel):
     def __init__(self, **data):
         data.pop("source", None)
         super().__init__(**data)
+
+
+class AgentstopicTypes(Enum):
+    DISPATCHER = "dispatcher"
+    ORCHESTRATION = "orchestration"
+    PROCESS_ANALYSIS_EXPERT = "process_analysis_expert"
+    USER = "user"
