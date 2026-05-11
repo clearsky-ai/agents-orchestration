@@ -32,7 +32,7 @@ class ChatInput(BaseModel):
         super().__init__(**data)
 
 
-class AgentstopicTypes(Enum):
+class AgentsTopicTypes(Enum):
     DISPATCHER = "dispatcher"
     ORCHESTRATION = "orchestration"
     PROCESS_ANALYSIS_EXPERT = "process_analysis_expert"
