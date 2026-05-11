@@ -69,7 +69,14 @@ def sql_schema():
     )
 
 
-@server.tool()
+@server.tool(
+    name="run_sql_query",
+    description=(
+        "Execute a read-only SELECT against the in-memory Process Orchestration database "
+        "(tasks, activities). Use the schema://sql resource for table DDL. "
+        "Non-SELECT statements are rejected."
+    ),
+)
 def run_sql_query(query: str):
     """Run a read-only SELECT against the Process Orchestration store."""
     if not query.strip().upper().startswith("SELECT"):
@@ -77,7 +84,13 @@ def run_sql_query(query: str):
     return rows(db.execute(query))
 
 
-@server.tool()
+@server.tool(
+    name="get_task_dependencies",
+    description=(
+        "Return dependency edges for a task: upstream task IDs that must complete first, "
+        "and downstream task IDs that depend on this task. Dependency data is loaded from mock seed data."
+    ),
+)
 def get_task_dependencies(task_id: str):
     """Get the upstream dependencies for a given task."""
     upstream = [dep["upstream"] for dep in DEPENDENCIES if dep["downstream"] == task_id]
@@ -87,7 +100,13 @@ def get_task_dependencies(task_id: str):
     return {"upstream": upstream, "downstream": downstream}
 
 
-@server.tool()
+@server.tool(
+    name="process_status",
+    description=(
+        "High-level portfolio snapshot: configured current business day (BD offset), "
+        "percent of tasks in complete state, and count of tasks in in_progress state."
+    ),
+)
 def process_status():
     """Today's business day, % complete, and number of in-progress tasks."""
     total = db.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"]
@@ -104,7 +123,13 @@ def process_status():
     }
 
 
-@server.tool()
+@server.tool(
+    name="update_task_attribute",
+    description=(
+        "Persist a single column update on one task by task_id. Allowed attributes: name, team, "
+        "state, business_day, owner, description. Commits immediately to the in-memory store."
+    ),
+)
 def update_task_attribute(task_id: str, attribute: str, value):
     """Update one attribute of one task."""
     if attribute not in ALLOWED_TASK_COLUMNS:
