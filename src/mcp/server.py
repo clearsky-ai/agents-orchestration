@@ -1,9 +1,19 @@
+from pathlib import Path
 import json
 import sqlite3
-from pathlib import Path
+
+from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+load_dotenv(_REPO_ROOT / ".env")
+
+from src.mcp.cg_tools import register_cg_tools
+from src.mcp.cp_resources import register_cp_resources
+
 server = FastMCP("mcp-server")
+register_cp_resources(server)
+register_cg_tools(server)
 
 # --------------------Context Graph Tools/Resources--------------------
 

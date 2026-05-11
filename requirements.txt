@@ -1,0 +1,10 @@
+# Runtime dependencies for agents-orchestration (see src/, scripts/)
+
+autogen-core>=0.4.0
+autogen-ext[mcp]>=0.4.0
+dspy-ai>=2.4.0
+mcp>=1.8.0
+neo4j>=5.23.0,<6
+openai>=1.0.0
+pydantic>=2.0.0
+python-dotenv>=1.0.0
