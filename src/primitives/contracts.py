@@ -12,3 +12,8 @@ class AgentsTask(BaseModel):
 
     content: str
     source: EventSources
+
+
+class AgentResponse(BaseModel):
+    context: str
+    reply_to_topic_type: str

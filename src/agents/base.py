@@ -1,5 +1,5 @@
 import json
-from typing import List, Tuple
+from typing import Callable, List, Tuple
 
 from autogen_core import (
     FunctionCall,
@@ -16,7 +16,7 @@ from autogen_core.models import (
     SystemMessage,
 )
 from autogen_core.tools import Tool, FunctionTool
-from src.primitives.contracts import AgentsTask
+from src.primitives.contracts import AgentResponse, AgentsTask
 
 
 class AIAgent(RoutedAgent):
@@ -29,6 +29,8 @@ class AIAgent(RoutedAgent):
         delegate_tools: List[Tool],
         agent_topic_type: str,
         user_topic_type: str,
+        output_channel_publish_method: Callable[[AgentsTask], None],
+        input_channel_subscribe_method: Callable[[str], None],
     ) -> None:
         super().__init__(description)
         self._system_message = system_message
@@ -48,7 +50,7 @@ class AIAgent(RoutedAgent):
             tools=self._tool_schema + self._delegate_tool_schema,
             cancellation_token=ctx.cancellation_token,
         )
-        print(f"{'-'*80}\n{self.id.type}:\n{llm_result.content}", flush=True)
+        
         # Process the LLM result.
         while isinstance(llm_result.content, list) and all(
             isinstance(m, FunctionCall) for m in llm_result.content
