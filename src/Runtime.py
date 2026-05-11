@@ -43,7 +43,6 @@ async def main(input_method: callable):
         single_threaded_runtime,
         model_client=azure_llm,
         description="The process analysis expert agent is responsible for analyzing the processes and providing insights.",
-        model_client=azure_llm,
         agent_topic_type=AgentstopicTypes.PROCESS_ANALYSIS_EXPERT,
         user_topic_type=AgentstopicTypes.USER,
     )
