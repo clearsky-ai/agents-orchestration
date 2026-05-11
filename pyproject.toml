@@ -1,2 +1,8 @@
 [tool.ruff]
 line-length = 100
+
+[dependency-groups]
+dev = [
+    "db-sqlite3>=0.0.1",
+    "mcp>=1.27.1",
+]
