@@ -1,5 +1,5 @@
 import json
-from typing import List, Tuple
+from typing import List
 
 from autogen_core import (
     FunctionCall,
@@ -14,9 +14,22 @@ from autogen_core.models import (
     FunctionExecutionResult,
     FunctionExecutionResultMessage,
     SystemMessage,
+    UserMessage,
 )
 from autogen_core.tools import Tool, FunctionTool
-from src.primitives.contracts import AgentsTask
+from src.primitives.contracts import AgentResponse, AgentsTask
+from src.mcp.client import MCPToolWrapper
+
+
+def _task_context_to_llm_messages(context: List[object]) -> List[object]:
+    """Turn user string turns into UserMessage; leave transcript messages as-is."""
+    out: List[object] = []
+    for item in context:
+        if isinstance(item, str):
+            out.append(UserMessage(content=item, source="user"))
+        else:
+            out.append(item)
+    return out
 
 
 class AIAgent(RoutedAgent):
@@ -25,8 +38,7 @@ class AIAgent(RoutedAgent):
         description: str,
         system_message: SystemMessage,
         model_client: ChatCompletionClient,
-        tools: List[Tool],
-        delegate_tools: List[Tool],
+        tools: List[MCPToolWrapper],
         agent_topic_type: str,
         user_topic_type: str,
     ) -> None:
@@ -35,26 +47,31 @@ class AIAgent(RoutedAgent):
         self._model_client = model_client
         self._tools = dict([(tool.name, tool) for tool in tools])
         self._tool_schema = [tool.schema for tool in tools]
-        self._delegate_tools = dict([(tool.name, tool) for tool in delegate_tools])
-        self._delegate_tool_schema = [tool.schema for tool in delegate_tools]
         self._agent_topic_type = agent_topic_type
         self._user_topic_type = user_topic_type
 
     @message_handler
     async def handle_task(self, message: AgentsTask, ctx: MessageContext) -> None:
+
+        print(f"{'-'*80}\n{self.id.type} Got Message: {message.context}", flush=True)
+
         # Send the task to the LLM.
         llm_result = await self._model_client.create(
-            messages=[self._system_message] + message.context,
-            tools=self._tool_schema + self._delegate_tool_schema,
+            messages=[self._system_message]
+            + _task_context_to_llm_messages(message.context),
+            tools=self._tool_schema,
             cancellation_token=ctx.cancellation_token,
         )
-        print(f"{'-'*80}\n{self.id.type}:\n{llm_result.content}", flush=True)
+
+        print(
+            f"{'-'*80}\n{self.id.type} LLM Initial Result: {llm_result.content}",
+            flush=True,
+        )
         # Process the LLM result.
         while isinstance(llm_result.content, list) and all(
             isinstance(m, FunctionCall) for m in llm_result.content
         ):
             tool_call_results: List[FunctionExecutionResult] = []
-            delegate_targets: List[Tuple[str, AgentsTask]] = []
             # Process each function call.
             for call in llm_result.content:
                 arguments = json.loads(call.arguments)
@@ -74,43 +91,10 @@ class AIAgent(RoutedAgent):
                             name=call.name,
                         )
                     )
-                elif call.name in self._delegate_tools:
-                    # Execute the tool to get the delegate agent's topic type.
-                    result = await self._delegate_tools[call.name].run_json(
-                        arguments, ctx.cancellation_token
-                    )
-                    topic_type = self._delegate_tools[call.name].return_value_as_string(
-                        result
-                    )
-                    # Create the context for the delegate agent, including the function call and the result.
-                    delegate_messages = list(message.context) + [
-                        AssistantMessage(content=[call], source=self.id.type),
-                        FunctionExecutionResultMessage(
-                            content=[
-                                FunctionExecutionResult(
-                                    call_id=call.id,
-                                    content=f"Transferred to {topic_type}. Adopt persona immediately.",
-                                    is_error=False,
-                                    name=call.name,
-                                )
-                            ]
-                        ),
-                    ]
-                    delegate_targets.append(
-                        (topic_type, AgentsTask(context=delegate_messages))
-                    )
+
                 else:
                     raise ValueError(f"Unknown tool: {call.name}")
-            if len(delegate_targets) > 0:
-                # Delegate the task to other agents by publishing messages to the corresponding topics.
-                for topic_type, task in delegate_targets:
-                    print(
-                        f"{'-'*80}\n{self.id.type}:\nDelegating to {topic_type}",
-                        flush=True,
-                    )
-                    await self.publish_message(
-                        task, topic_id=TopicId(topic_type, source=self.id.key)
-                    )
+
             if len(tool_call_results) > 0:
                 print(f"{'-'*80}\n{self.id.type}:\n{tool_call_results}", flush=True)
                 # Make another LLM call with the results.
@@ -123,8 +107,9 @@ class AIAgent(RoutedAgent):
                     ]
                 )
                 llm_result = await self._model_client.create(
-                    messages=[self._system_message] + message.context,
-                    tools=self._tool_schema + self._delegate_tool_schema,
+                    messages=[self._system_message]
+                    + _task_context_to_llm_messages(message.context),
+                    tools=self._tool_schema,
                     cancellation_token=ctx.cancellation_token,
                 )
                 print(f"{'-'*80}\n{self.id.type}:\n{llm_result.content}", flush=True)
@@ -136,6 +121,7 @@ class AIAgent(RoutedAgent):
         message.context.append(
             AssistantMessage(content=llm_result.content, source=self.id.type)
         )
+        print(f"{'-'*80}\n{self.id.type} Final Result: {message.context}", flush=True)
         await self.publish_message(
             AgentResponse(
                 context=message.context, reply_to_topic_type=self._agent_topic_type
