@@ -1,12 +1,12 @@
 from typing import List
 from pydantic import BaseModel, Field
 
-from primitives.contracts import AgentsTopicTypes
+# from src.primitives.contracts import AgentsTopicTypes
 
 
 class AgentMission(BaseModel):
 
-    agent_id: AgentsTopicTypes
+    agent_id: str
     task: str = Field(description="The task to be executed by the agent")
 
 

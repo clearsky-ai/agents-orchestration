@@ -59,7 +59,11 @@ async def main(input_method: callable):
         single_threaded_runtime,
         dspy_agent=get_lm(),
         agent_topic_type=AgentsTopicTypes.ORCHESTRATION.value,
-        participant_topic_types=[AgentsTopicTypes.PROCESS_ANALYSIS_EXPERT.value],
+        participant_topic_types=[AgentsTopicTypes.PROCESS_ANALYSIS_EXPERT.value, AgentsTopicTypes.CONTEXT_GRAPH_EXPERT.value],
+        participant_descriptions=[
+            "The process analysis expert agent is responsible for analyzing the processes and providing insights.",
+            "The context graph expert agent is responsible for analyzing the context graph and providing insights.",
+        ],
     )
     single_threaded_runtime.start()
     print("Agents registered successfully")
