@@ -50,8 +50,11 @@ class DispatcherAgent(RoutedAgent):
             )
             return
         print(f"Publishing next input: {next_input}")
+
         await self.publish_message(
-            AgentsTask(context=[next_input], source=EventSources.USER_CHAT),
+            AgentsTask(
+                context=message.context + [next_input], source=EventSources.USER_CHAT
+            ),
             topic_id=TopicId(self._orchestration_agent_topic_type, source=self.id.key),
         )
 
