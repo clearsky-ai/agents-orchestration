@@ -59,11 +59,10 @@ class MCPClient:
         if server_params is not None:
             self._server_params = server_params
         else:
-            script = (
-                Path(server_script).resolve()
-                if server_script is not None
-                else Path(__file__).resolve().parent / "server.py"
+            script = Path(__file__).resolve().parent / (
+                server_script if server_script is not None else "pmo_server.py"
             )
+
             self._server_params = StdioServerParams(
                 command=sys.executable,
                 args=[str(script)],
@@ -138,4 +137,3 @@ class MCPClient:
             return json.loads(raw_output)
         except json.JSONDecodeError:
             return raw_output
-

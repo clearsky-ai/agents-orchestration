@@ -3,11 +3,13 @@ from dotenv import load_dotenv
 from src.agents.dispatcher import register_dispatcher_agent
 from src.agents.orchestration import register_orchestration_agent
 from src.agents.process_analysis_expert import register_process_analysis_expert
+from src.agents.context_graph_expert import register_context_graph_expert
 from src.primitives.contracts import AgentsTopicTypes, ChatInput
 
 load_dotenv()
 
 from src.common.llm.azure import get_azure_lm
+from src.common.llm.dspy import get_lm
 from autogen_core import SingleThreadedAgentRuntime, TopicId
 
 
@@ -45,11 +47,17 @@ async def main(input_method: callable):
         agent_topic_type=AgentsTopicTypes.PROCESS_ANALYSIS_EXPERT.value,
         user_topic_type=AgentsTopicTypes.DISPATCHER.value,
     )
-
+    cg_expert_agent = await register_context_graph_expert(
+        single_threaded_runtime,
+        model_client=azure_llm,
+        description="The context graph expert agent is responsible for analyzing the context graph and providing insights.",
+        agent_topic_type=AgentsTopicTypes.CONTEXT_GRAPH_EXPERT.value,
+        user_topic_type=AgentsTopicTypes.DISPATCHER.value,
+    )
     # regisrter orchestration agent:
     orchestration_agent = await register_orchestration_agent(
         single_threaded_runtime,
-        model_client=azure_llm,
+        dspy_agent=get_lm(),
         agent_topic_type=AgentsTopicTypes.ORCHESTRATION.value,
         participant_topic_types=[AgentsTopicTypes.PROCESS_ANALYSIS_EXPERT.value],
     )

@@ -52,7 +52,7 @@ class OrchestrationAgent(RoutedAgent):
 
 async def register_orchestration_agent(
     runtime: SingleThreadedAgentRuntime,
-    model_client: ChatCompletionClient,
+    dspy_agent: any,
     agent_topic_type: str,
     participant_topic_types: List[str],
 ) -> OrchestrationAgent:
@@ -62,7 +62,7 @@ async def register_orchestration_agent(
         factory=lambda: OrchestrationAgent(
             orchestration_topic_type=agent_topic_type,
             participant_topic_types=participant_topic_types,
-            model_client=model_client,
+            dspy_agent=dspy_agent,
         ),
     )
     await runtime.add_subscription(

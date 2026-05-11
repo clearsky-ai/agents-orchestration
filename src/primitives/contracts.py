@@ -36,3 +36,4 @@ class AgentsTopicTypes(Enum):
     DISPATCHER = "dispatcher"
     ORCHESTRATION = "orchestration"
     PROCESS_ANALYSIS_EXPERT = "process_analysis_expert"
+    CONTEXT_GRAPH_EXPERT = "context_graph_expert"

@@ -16,9 +16,7 @@ from src.mcp.cg_tools import register_cg_tools
 from src.mcp.cp_resources import register_cp_resources
 
 load_dotenv()
-server = FastMCP("mcp-server")
-register_cp_resources(server)
-register_cg_tools(server)
+server = FastMCP("pmo-mcp-server")
 
 # --------------------Context Graph Tools/Resources--------------------
 
