@@ -21,13 +21,13 @@ class OrchestrationAgent(RoutedAgent):
         self,
         orchestration_topic_type: str,
         participant_topic_types: List[str],
-        model_client: ChatCompletionClient,
+        dspy_agent: any,
         # participant_descriptions: List[str],
         # TODO: add when choosing which agents participate in orchestration.
     ) -> None:
         super().__init__(orchestration_topic_type)
         self._participant_topic_types = participant_topic_types
-        self._model_client = model_client
+        self._model_client = dspy_agent
 
     @message_handler
     async def handle_task(
