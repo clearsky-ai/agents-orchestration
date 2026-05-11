@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List, Union
 from pydantic import BaseModel
 from enum import Enum
 
@@ -10,12 +10,13 @@ class EventSources(Enum):
 
 
 class AgentsTask(BaseModel):
-    context: List[str]
+    # str user lines from the dispatcher; later entries are LLM transcript messages.
+    context: List[Any]
     source: EventSources
 
 
 class AgentResponse(BaseModel):
-    context: str
+    context: Union[str, List[Any]]
     reply_to_topic_type: str
 
 

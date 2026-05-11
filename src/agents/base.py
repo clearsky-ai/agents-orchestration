@@ -14,10 +14,22 @@ from autogen_core.models import (
     FunctionExecutionResult,
     FunctionExecutionResultMessage,
     SystemMessage,
+    UserMessage,
 )
 from autogen_core.tools import Tool, FunctionTool
 from src.primitives.contracts import AgentResponse, AgentsTask
 from src.mcp.client import MCPToolWrapper
+
+
+def _task_context_to_llm_messages(context: List[object]) -> List[object]:
+    """Turn user string turns into UserMessage; leave transcript messages as-is."""
+    out: List[object] = []
+    for item in context:
+        if isinstance(item, str):
+            out.append(UserMessage(content=item, source="user"))
+        else:
+            out.append(item)
+    return out
 
 
 class AIAgent(RoutedAgent):
@@ -42,8 +54,9 @@ class AIAgent(RoutedAgent):
     async def handle_task(self, message: AgentsTask, ctx: MessageContext) -> None:
         # Send the task to the LLM.
         llm_result = await self._model_client.create(
-            messages=[self._system_message] + message.context,
-            tools=self._tool_schema + self._delegate_tool_schema,
+            messages=[self._system_message]
+            + _task_context_to_llm_messages(message.context),
+            tools=self._tool_schema,
             cancellation_token=ctx.cancellation_token,
         )
 
@@ -87,8 +100,9 @@ class AIAgent(RoutedAgent):
                     ]
                 )
                 llm_result = await self._model_client.create(
-                    messages=[self._system_message] + message.context,
-                    tools=self._tool_schema + self._delegate_tool_schema,
+                    messages=[self._system_message]
+                    + _task_context_to_llm_messages(message.context),
+                    tools=self._tool_schema,
                     cancellation_token=ctx.cancellation_token,
                 )
                 print(f"{'-'*80}\n{self.id.type}:\n{llm_result.content}", flush=True)

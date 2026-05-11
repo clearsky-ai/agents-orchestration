@@ -22,29 +22,32 @@ class OrchestrationAgent(RoutedAgent):
         orchestration_topic_type: str,
         participant_topic_types: List[str],
         model_client: ChatCompletionClient,
-        # participant_descriptions: List[str], # TODO: add this when we want to choose certain agents to participate in the orchestration.
+        # participant_descriptions: List[str],
+        # TODO: add when choosing which agents participate in orchestration.
     ) -> None:
         super().__init__(orchestration_topic_type)
         self._participant_topic_types = participant_topic_types
         self._model_client = model_client
 
     @message_handler
-    async def handle_task(self, task: AgentsTask, ctx: MessageContext) -> None:
+    async def handle_task(
+        self, message: AgentsTask, ctx: MessageContext
+    ) -> None:
 
         # broadcast to all agents.
         # Note that we use publish_message not send_message here.
 
-        for participant in self._participant_topic_types:
-
-            results = await asyncio.gather(
-                *[
-                    self.publish_message(
-                        task, topic_id=TopicId(participant, source=self.id.key)
-                    )
-                    for participant in self._participant_topic_types
-                ]
-            )
-        return results
+        await asyncio.gather(
+            *[
+                self.publish_message(
+                    message,
+                    topic_id=TopicId(
+                        participant_topic, source=self.id.key
+                    ),
+                )
+                for participant_topic in self._participant_topic_types
+            ]
+        )
 
 
 async def register_orchestration_agent(

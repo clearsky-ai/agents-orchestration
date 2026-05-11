@@ -1,8 +1,9 @@
 from autogen_core import MessageContext, SingleThreadedAgentRuntime, TypeSubscription
 from autogen_core import RoutedAgent, TopicId, message_handler
+from autogen_core.models import UserMessage
 
-from agents.base import AIAgent
-from primitives.contracts import AgentResponse, AgentsTask, ChatInput
+from src.agents.base import AIAgent
+from src.primitives.contracts import AgentResponse, AgentsTask, ChatInput
 
 
 class DispatcherAgent(RoutedAgent):
@@ -19,15 +20,16 @@ class DispatcherAgent(RoutedAgent):
         self._output_channel_publish_method = output_channel_publish_method
 
     @message_handler
-    async def handle_task(self, task: ChatInput, ctx: MessageContext) -> None:
+    async def handle_chat_input(self, message: ChatInput, ctx: MessageContext) -> None:
 
-        print(f"Publishing task to orchestration agent: {task.content}")
+        print(f"Publishing task to orchestration agent: {message.content}")
         # publish to orchestration agent
-        return await self.publish_message(
-            AgentsTask(context=task.context, source=task.source),
+        await self.publish_message(
+            AgentsTask(context=[message.content], source=message.source),
             topic_id=TopicId(self._orchestration_agent_topic_type, source=self.id.key),
         )
 
+    @message_handler
     async def handle_agent_response(
         self, message: AgentResponse, topic_id: TopicId
     ) -> None:
@@ -37,7 +39,7 @@ class DispatcherAgent(RoutedAgent):
         next_input = self._input_channel_subscribe_method()
         if next_input.strip() == "" or next_input.strip().lower() == "Fuck off":
 
-            self.output_channel_publish_method(
+            self._output_channel_publish_method(
                 AgentResponse(
                     context="Goodbye",
                     reply_to_topic_type=self._orchestration_agent_topic_type,
@@ -52,7 +54,6 @@ class DispatcherAgent(RoutedAgent):
 
 async def register_dispatcher_agent(
     runtime: SingleThreadedAgentRuntime,
-    description: str,
     agent_topic_type: str,
     orchestration_agent_topic_type: str,
     input_channel_subscribe_method: callable,
@@ -63,7 +64,7 @@ async def register_dispatcher_agent(
         runtime,
         type=agent_topic_type,  # Using the topic type as the agent type.
         factory=lambda: DispatcherAgent(
-            description=description,
+            dispatcher_topic_type=agent_topic_type,
             orchestration_agent_topic_type=orchestration_agent_topic_type,
             input_channel_subscribe_method=input_channel_subscribe_method,
             output_channel_publish_method=output_channel_publish_method,
