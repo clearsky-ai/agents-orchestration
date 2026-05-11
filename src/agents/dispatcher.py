@@ -3,7 +3,7 @@ from autogen_core import RoutedAgent, TopicId, message_handler
 from autogen_core.models import UserMessage
 
 from src.agents.base import AIAgent
-from src.primitives.contracts import AgentResponse, AgentsTask, ChatInput
+from src.primitives.contracts import AgentResponse, AgentsTask, ChatInput, EventSources
 
 
 class DispatcherAgent(RoutedAgent):
@@ -33,10 +33,13 @@ class DispatcherAgent(RoutedAgent):
     async def handle_agent_response(
         self, message: AgentResponse, topic_id: TopicId
     ) -> None:
-
+        print(f"Handling agent response: {message.context}")
         self._output_channel_publish_method(message.context)
 
-        next_input = self._input_channel_subscribe_method()
+        print("Awaiting next input...", flush=True)
+        next_input = self._input_channel_subscribe_method(
+            "Please enter your next input: "
+        )
         if next_input.strip() == "" or next_input.strip().lower() == "Fuck off":
 
             self._output_channel_publish_method(
@@ -46,8 +49,9 @@ class DispatcherAgent(RoutedAgent):
                 )
             )
             return
+        print(f"Publishing next input: {next_input}")
         await self.publish_message(
-            ChatInput(content=next_input),
+            AgentsTask(context=[next_input], source=EventSources.USER_CHAT),
             topic_id=TopicId(self._orchestration_agent_topic_type, source=self.id.key),
         )
 

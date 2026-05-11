@@ -43,7 +43,7 @@ async def main(input_method: callable):
         model_client=azure_llm,
         description="The process analysis expert agent is responsible for analyzing the processes and providing insights.",
         agent_topic_type=AgentstopicTypes.PROCESS_ANALYSIS_EXPERT.value,
-        user_topic_type=AgentstopicTypes.USER.value,
+        user_topic_type=AgentstopicTypes.DISPATCHER.value,
     )
 
     # regisrter orchestration agent:

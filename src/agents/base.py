@@ -52,6 +52,9 @@ class AIAgent(RoutedAgent):
 
     @message_handler
     async def handle_task(self, message: AgentsTask, ctx: MessageContext) -> None:
+
+        print(f"{'-'*80}\n{self.id.type} Got Message: {message.context}", flush=True)
+
         # Send the task to the LLM.
         llm_result = await self._model_client.create(
             messages=[self._system_message]
@@ -60,6 +63,10 @@ class AIAgent(RoutedAgent):
             cancellation_token=ctx.cancellation_token,
         )
 
+        print(
+            f"{'-'*80}\n{self.id.type} LLM Initial Result: {llm_result.content}",
+            flush=True,
+        )
         # Process the LLM result.
         while isinstance(llm_result.content, list) and all(
             isinstance(m, FunctionCall) for m in llm_result.content
@@ -114,6 +121,7 @@ class AIAgent(RoutedAgent):
         message.context.append(
             AssistantMessage(content=llm_result.content, source=self.id.type)
         )
+        print(f"{'-'*80}\n{self.id.type} Final Result: {message.context}", flush=True)
         await self.publish_message(
             AgentResponse(
                 context=message.context, reply_to_topic_type=self._agent_topic_type

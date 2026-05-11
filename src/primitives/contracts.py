@@ -36,4 +36,3 @@ class AgentstopicTypes(Enum):
     DISPATCHER = "dispatcher"
     ORCHESTRATION = "orchestration"
     PROCESS_ANALYSIS_EXPERT = "process_analysis_expert"
-    USER = "user"
