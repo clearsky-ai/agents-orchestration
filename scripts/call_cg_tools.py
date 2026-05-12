@@ -71,7 +71,8 @@ def main() -> None:
         "get_evidence_trace",
         "get_task_context",
         "update_task_field",
-        "link_evidence",
+        "link_to_task",
+        "add_node",
     )
     missing = [n for n in expected if n not in tools]
     if missing:
@@ -128,12 +129,50 @@ def main() -> None:
     prev_task = ev["task_id"]
     try:
         _print_call(
-            "link_evidence",
-            {"task_id": "T01", "evidence_id": eid},
-            tools["link_evidence"]("T01", eid),
+            "link_to_task",
+            {"task_id": "T01", "node_type": "Evidence", "node_id": eid},
+            tools["link_to_task"]("T01", "Evidence", eid),
         )
     finally:
         ev["task_id"] = prev_task
+
+    did = "dec-001"
+    dec = next((d for d in cg_tools.DECISIONS if d.get("decision_id") == did), None)
+    if dec is None:
+        raise RuntimeError("call_cg_tools: mock_data.json must include decision dec-001")
+    prev_dec_task = dec["task_id"]
+    try:
+        _print_call(
+            "link_to_task",
+            {"task_id": "T01", "node_type": "Decision", "node_id": did},
+            tools["link_to_task"]("T01", "Decision", did),
+        )
+    finally:
+        dec["task_id"] = prev_dec_task
+
+    add_args: dict[str, Any] = {
+        "node_type": "Evidence",
+        "fields": {
+            "source": "call_cg_tools",
+            "summary": "add_node smoke (_script_demo)",
+            "occurred_at": "2026-05-12T00:00:00Z",
+            "task_id": "T01",
+        },
+    }
+    add_result = tools["add_node"](add_args["node_type"], add_args["fields"])
+    _print_call("add_node", add_args, add_result)
+    if add_result.get("ok") and add_args["node_type"] == "Evidence":
+        eid_created = add_result.get("node_id")
+        driver = cg_tools._get_neo4j_driver()
+        if driver is not None and isinstance(eid_created, str) and eid_created:
+            try:
+                with driver.session() as session:
+                    session.run(
+                        "MATCH (e:Evidence {evidence_id: $id}) DETACH DELETE e",
+                        id=eid_created,
+                    )
+            except Exception as exc:
+                print(f"(add_node cleanup skipped: {exc})", file=sys.stderr)
 
     print("\n" + "=" * 72)
     print("Done.")
