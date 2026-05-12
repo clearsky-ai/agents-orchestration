@@ -52,26 +52,13 @@ class AIAgent(RoutedAgent):
         self._user_topic_type = user_topic_type
 
     def _build_messages(self, message: AgentsTask) -> List[object]:
-        """Prepend system prompt and (optionally) an orchestrator plan to the task context."""
-        messages: List[object] = [self._system_message]
-        if message.plan:
-            messages.append(
-                SystemMessage(
-                    content=(
-                        "Orchestrator plan for this agent (follow it precisely):\n"
-                        f"{message.plan}"
-                    )
-                )
-            )
-        messages.extend(_task_context_to_llm_messages(message.context))
-        return messages
+        """Prepend the system prompt to the task context."""
+        return [self._system_message] + _task_context_to_llm_messages(message.context)
 
     @message_handler
     async def handle_task(self, message: AgentsTask, ctx: MessageContext) -> None:
 
         console.section(f"{self.id.type} :: task received", color=console.magenta)
-        if message.plan:
-            console.kv("plan", message.plan)
 
         # Send the task to the LLM.
         llm_result = await self._model_client.create(
