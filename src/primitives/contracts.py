@@ -28,3 +28,8 @@ class AgentstopicTypes(Enum):
     EVIDENCE_ANALYST = "evidence_analyst"
     CONTEXT_RESEARCH_AGENT = "context_research_agent"
     LOGIC = "logic"
+    EXECUTOR = "executor"
+    # Terminal topic for the Executor's post-execution AgentResponse.
+    # No agent subscribes — the message is dropped. Reserved as the
+    # extension point for an audit / dashboard consumer later.
+    EXECUTOR_DONE = "executor.done"

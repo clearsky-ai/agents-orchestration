@@ -1,17 +1,3 @@
-"""LogicAgent — pass B (decision + propose-only actions).
-
-Aggregates the three analysts' `AgentResponse`s on the `logic` topic. Once all
-expected sources have replied, runs a single LLM call with the write tools'
-schemas visible. The LLM returns either:
-  * a plain text explanation (no action warranted), or
-  * one or more `FunctionCall` objects naming actions the LLM wants to take.
-
-In this pass the tool calls are NOT executed — they are rendered as "proposed
-actions" via `console.final_answer_box`. Flipping to real execution is a small
-change in `_decide_and_propose`: replace the rendering step with the same
-tool-loop that `AIAgent.handle_task` runs in `base.py`.
-"""
-
 from __future__ import annotations
 
 import json
@@ -22,6 +8,7 @@ from autogen_core import (
     MessageContext,
     RoutedAgent,
     SingleThreadedAgentRuntime,
+    TopicId,
     TypeSubscription,
     message_handler,
 )
@@ -31,9 +18,10 @@ from autogen_core.models import (
     UserMessage,
 )
 
+from src.agents.policy_criticiser import critique
 from src.common import console
 from src.mcp.client import MCPClient, MCPToolWrapper
-from src.primitives.contracts import AgentResponse
+from src.primitives.contracts import AgentResponse, AgentsTask, EventSources
 
 
 LOGIC_TOOLS = [
@@ -111,11 +99,13 @@ class LogicAgent(RoutedAgent):
     def __init__(
         self,
         logic_topic_type: str,
+        executor_topic_type: str,
         expected_sources: Set[str],
         model_client: ChatCompletionClient,
         tools: List[MCPToolWrapper],
     ) -> None:
         super().__init__(logic_topic_type)
+        self._executor_topic_type = executor_topic_type
         self._expected_sources = set(expected_sources)
         self._model_client = model_client
         # Tools are loaded so the LLM SEES them in its schema. They are NOT
@@ -192,17 +182,58 @@ class LogicAgent(RoutedAgent):
         )
 
         proposed_text = _render_proposed_actions(llm_result.content)
-        console.final_answer_box(
-            "Logic :: decision (propose-only)", proposed_text
-        )
-        # No downstream consumer yet — the final_answer_box is the user-visible
-        # output. When the interpreter / write-back path is wired up, that's
-        # where this proposal will go next.
+        console.section("Logic :: action plan", color=console.cyan)
+        console.body(proposed_text)
+
+        # No-action case: nothing to critique, no Yes/No routing to make.
+        if proposed_text.startswith("No action proposed"):
+            console.final_answer_box(
+                "Logic :: decision (no action)", proposed_text
+            )
+            return
+
+        # Single-shot policy critique. The LogicAgent does NOT execute or
+        # escalate yet — both branches terminate at the console until the
+        # ExecutionAgent and HumanEscalation paths are wired.
+        console.section("Logic :: policy critique", color=console.cyan)
+        results = await critique(findings_text, proposed_text)
+        for r in results:
+            mark = "passed" if r.passed else "failed"
+            console.kv(f"  {mark} {r.policy}", r.reason)
+
+        if all(r.passed for r in results):
+            decision_summary = "Yes — plan routed to ExecutorAgent."
+            console.final_answer_box(
+                "Logic :: decision",
+                f"{proposed_text}\n\n{decision_summary}",
+            )
+            # Publish AFTER rendering the box so the executor's output appears
+            # below the box rather than interleaved with it. The plan flows
+            # as plain text in the AgentsTask context; the Executor's LLM
+            # reads it and issues matching FunctionCalls.
+            await self.publish_message(
+                AgentsTask(
+                    context=[proposed_text],
+                    source=EventSources.AGENT,
+                ),
+                topic_id=TopicId(self._executor_topic_type, source=self.id.key),
+            )
+        else:
+            failed = [r.policy for r in results if not r.passed]
+            decision_summary = (
+                "No — would route to HumanEscalation (not yet wired). "
+                f"Failed policies: {'; '.join(failed)}"
+            )
+            console.final_answer_box(
+                "Logic :: decision",
+                f"{proposed_text}\n\n{decision_summary}",
+            )
 
 
 async def register_logic_agent(
     runtime: SingleThreadedAgentRuntime,
     agent_topic_type: str,
+    executor_topic_type: str,
     expected_sources: Set[str],
     model_client: ChatCompletionClient,
 ) -> LogicAgent:
@@ -214,6 +245,7 @@ async def register_logic_agent(
         type=agent_topic_type,
         factory=lambda: LogicAgent(
             logic_topic_type=agent_topic_type,
+            executor_topic_type=executor_topic_type,
             expected_sources=expected_sources,
             model_client=model_client,
             tools=tools,

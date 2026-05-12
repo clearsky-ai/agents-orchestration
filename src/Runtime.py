@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 
 from src.agents.context_research_agent import register_context_research_agent
 from src.agents.evidence_analyst import register_evidence_analyst
+from src.agents.executor import register_executor_agent
 from src.agents.logic import register_logic_agent
 from src.agents.orchestration import register_orchestration_agent
 from src.agents.process_state_analyst import register_process_state_analyst
@@ -53,17 +54,31 @@ async def main(input_method: callable):
     )
 
     # LogicAgent: aggregates the three analyst replies, runs an LLM with the
-    # write tools' schemas, and renders the LLM's decision as proposed actions.
-    # Propose-only — tool calls are NOT executed.
+    # write tools' schemas, runs the policy criticiser, and routes the plan.
+    # Yes path -> publishes AgentsTask(plan_text) on the `executor` topic.
+    # No path  -> would go to HumanEscalation (not yet wired).
     await register_logic_agent(
         single_threaded_runtime,
         agent_topic_type=AgentstopicTypes.LOGIC.value,
+        executor_topic_type=AgentstopicTypes.EXECUTOR.value,
         expected_sources={
             AgentstopicTypes.PROCESS_STATE_ANALYST.value,
             AgentstopicTypes.EVIDENCE_ANALYST.value,
             AgentstopicTypes.CONTEXT_RESEARCH_AGENT.value,
         },
         model_client=azure_llm,
+    )
+
+    # ExecutorAgent: the only agent that actually mutates state. Receives an
+    # approved plan from the LogicAgent as plain text; its own LLM issues
+    # FunctionCalls matching the plan and the standard AIAgent tool-loop
+    # invokes the write tools. Final reply goes to EXECUTOR_DONE (no consumer).
+    await register_executor_agent(
+        single_threaded_runtime,
+        model_client=azure_llm,
+        description="Executes approved action plans by calling the write tools.",
+        agent_topic_type=AgentstopicTypes.EXECUTOR.value,
+        user_topic_type=AgentstopicTypes.EXECUTOR_DONE.value,
     )
 
     single_threaded_runtime.start()
