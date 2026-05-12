@@ -32,7 +32,7 @@ db.row_factory = sqlite3.Row
 db.executescript("""
 CREATE TABLE tasks (
     task_id TEXT PRIMARY KEY,
-    name TEXT, team TEXT, state TEXT,
+    name TEXT, team TEXT, status TEXT,
     business_day TEXT, owner TEXT, description TEXT
 );
 CREATE TABLE activities (
@@ -42,7 +42,7 @@ CREATE TABLE activities (
 """)
 
 DEPENDENCIES = []
-ALLOWED_TASK_COLUMNS = ["name", "team", "state", "business_day", "owner", "description"]
+ALLOWED_TASK_COLUMNS = ["name", "team", "status", "business_day", "owner", "description"]
 
 def rows(cur):
     return [dict(row) for row in cur.fetchall()]
@@ -53,9 +53,9 @@ _data = json.loads(_data_path.read_text())
 
 for t in _data["tasks"]:
     db.execute(
-        "INSERT INTO tasks (task_id, name, team, state, business_day, owner, description) "
+        "INSERT INTO tasks (task_id, name, team, status, business_day, owner, description) "
         "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (t["task_id"], t["name"], t["team"], t["state"],
+        (t["task_id"], t["name"], t["team"], t["status"],
          t["business_day"], t["owner"], t["description"]),
     )
     for dep in t["upstream_dependencies"]:
@@ -109,16 +109,16 @@ def get_task_dependencies(task_id: str):
     name="process_status",
     description=(
         "High-level portfolio snapshot: configured current business day (BD offset), "
-        "percent of tasks in complete state, and count of tasks in in_progress state."
+        "percent of tasks in complete status, and count of tasks in in_progress status."
     ),
 )
 def process_status():
     """Today's business day, % complete, and number of in-progress tasks."""
     total = db.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"]
     completed = db.execute(
-        "SELECT COUNT(*) AS n FROM tasks WHERE state = 'complete'").fetchone()["n"]
+        "SELECT COUNT(*) AS n FROM tasks WHERE status = 'complete'").fetchone()["n"]
     in_progress = db.execute(
-        "SELECT COUNT(*) AS n FROM tasks WHERE state = 'in_progress'").fetchone()["n"]
+        "SELECT COUNT(*) AS n FROM tasks WHERE status = 'in_progress'").fetchone()["n"]
     return {
         "current_business_day": CURRENT_BUSINESS_DAY,
         "percent_complete": round(completed / total * 100, 1) if total else 0,
@@ -130,7 +130,7 @@ def process_status():
     name="update_task_attribute",
     description=(
         "Persist a single column update on one task by task_id. Allowed attributes: name, team, "
-        "state, business_day, owner, description. Commits immediately to the in-memory store."
+        "status, business_day, owner, description. Commits immediately to the in-memory store."
     ),
 )
 def update_task_attribute(task_id: str, attribute: str, value):

@@ -11,9 +11,6 @@ PROCESS_STATE_ANALYST_TOOLS = [
     "process_status",
     "run_sql_query",
     "get_task_dependencies",
-    "explain_blocker",
-    "update_task_attribute",
-    "update_task_field",
 ]
 
 SYSTEM_PROMPT = """You are the ProcessStateAnalyst.

@@ -9,7 +9,6 @@ from src.mcp.client import MCPClient
 
 EVIDENCE_ANALYST_TOOLS = [
     "get_evidence_trace",
-    "link_evidence",
     "find_similar_decisions",
 ]
 
