@@ -166,12 +166,12 @@ def register_cg_tools(server: FastMCP) -> None:
             TASKS[e["upstream"]]
             for e in EDGES
             if e["downstream"] == task_id
-            and TASKS[e["upstream"]]["state"] != "complete"
+            and TASKS[e["upstream"]]["status"] != "complete"
         ]
         ev = [e for e in EVIDENCE.values() if e["task_id"] == task_id]
         parts = []
-        if task["state"] != "blocked":
-            parts.append(f"Task is in state '{task['state']}', not blocked.")
+        if task["status"] != "blocked":
+            parts.append(f"Task is in status '{task['status']}', not blocked.")
         if upstream:
             parts.append(
                 "Upstream not complete: " + ", ".join(u["task_id"] for u in upstream)

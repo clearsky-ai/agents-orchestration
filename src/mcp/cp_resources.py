@@ -21,7 +21,7 @@ Tabular evidence row (e.g. mock_data.json evidence[])
 
 What evidence means
   Evidence explains context (e.g. why work is waiting). It does not by itself authorize
-  overrides or state changes on a task. Use it for narrative and audit, not as a sole
+  overrides or status changes on a task. Use it for narrative and audit, not as a sole
   approval signal.
 
 Thresholds & scores
