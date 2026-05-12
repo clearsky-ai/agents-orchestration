@@ -131,14 +131,15 @@ class AIAgent(RoutedAgent):
                 return
         # The task has been completed, publish the final result.
         assert isinstance(llm_result.content, str)
-        message.context.append(
-            AssistantMessage(content=llm_result.content, source=self.id.type)
-        )
         console.section(f"{self.id.type} :: final reply", color=console.green)
         console.body(llm_result.content)
+        # Publish ONLY the final answer, not the whole accumulated transcript.
+        # The transcript still grows inside the tool-loop above (because the
+        # LLM needs to see prior tool results on each next call), but downstream
+        # consumers only care about the final reply.
         await self.publish_message(
             AgentResponse(
-                context=message.context,
+                context=llm_result.content,
                 reply_to_topic_type=self._agent_topic_type,
                 source_agent=self.id.type,
             ),

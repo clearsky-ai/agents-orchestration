@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from src.agents.context_research_agent import register_context_research_agent
 from src.agents.evidence_analyst import register_evidence_analyst
+from src.agents.executor import register_executor_agent
 from src.agents.logic import register_logic_agent
 from src.agents.orchestration import register_orchestration_agent
 from src.agents.process_state_analyst import register_process_state_analyst
@@ -56,6 +57,7 @@ async def _register_default_agents(
     await register_logic_agent(
         single_threaded_runtime,
         agent_topic_type=AgentstopicTypes.LOGIC.value,
+        executor_topic_type=AgentstopicTypes.EXECUTOR.value,
         expected_sources={
             AgentstopicTypes.PROCESS_STATE_ANALYST.value,
             AgentstopicTypes.EVIDENCE_ANALYST.value,
@@ -64,6 +66,20 @@ async def _register_default_agents(
         model_client=azure_llm,
     )
 
+    # ExecutorAgent: the only agent that actually mutates state. Receives an
+    # approved plan from the LogicAgent as plain text; its own LLM issues
+    # FunctionCalls matching the plan and the standard AIAgent tool-loop
+    # invokes the write tools. Final reply goes to EXECUTOR_DONE (no consumer).
+    await register_executor_agent(
+        single_threaded_runtime,
+        model_client=azure_llm,
+        description="Executes approved action plans by calling the write tools.",
+        agent_topic_type=AgentstopicTypes.EXECUTOR.value,
+        user_topic_type=AgentstopicTypes.EXECUTOR_DONE.value,
+    )
+
+    single_threaded_runtime.start()
+    print("Agents registered successfully")
 
 async def run_pipeline_once(
     event_text: str,

@@ -1,27 +1,12 @@
-"""LogicAgent — pass B (decision + propose-only actions).
-
-Aggregates the three analysts' `AgentResponse`s on the `logic` topic. Once all
-expected sources have replied, runs a single LLM call with the write tools'
-schemas visible. The LLM returns either:
-  * a plain text explanation (no action warranted), or
-  * one or more `FunctionCall` objects naming actions the LLM wants to take.
-
-In this pass the tool calls are NOT executed — they are rendered as "proposed
-actions" via `console.final_answer_box`. Flipping to real execution is a small
-change in `_decide_and_propose`: replace the rendering step with the same
-tool-loop that `AIAgent.handle_task` runs in `base.py`.
-"""
-
 from __future__ import annotations
 
-import json
 from typing import Any, Dict, List, Optional, Set
 
 from autogen_core import (
-    FunctionCall,
     MessageContext,
     RoutedAgent,
     SingleThreadedAgentRuntime,
+    TopicId,
     TypeSubscription,
     message_handler,
 )
@@ -31,16 +16,9 @@ from autogen_core.models import (
     UserMessage,
 )
 
+from src.agents.policy_criticiser import critique
 from src.common import console
-from src.mcp.client import MCPClient, MCPToolWrapper
-from src.primitives.contracts import AgentResponse
-
-
-LOGIC_TOOLS = [
-    "update_task_attribute",
-    "update_task_field",
-    "link_to_task",
-]
+from src.primitives.contracts import AgentResponse, AgentsTask, EventSources
 
 
 LOGIC_SYSTEM_PROMPT = """You are the LogicAgent.
@@ -50,16 +28,40 @@ You receive findings from three specialist analysts about a single event:
 - EvidenceAnalyst — communication trail, prior decisions, and reasons a task is blocked.
 - ContextResearchAgent — broader graph context and historical precedents.
 
-Your job is to decide what action (if any) the system should take in response
-to the event. You have three write tools available:
-- update_task_attribute — change a non-core attribute of a task.
-- update_task_field — change a core field of a task (e.g. status).
-- link_to_task — attach an :Evidence or :Decision node to a task (by ``node_type`` and ``node_id``).
+Your job is to plan what action (if any) the system should take in response
+to the event. You are a planner — describe what needs to happen. A downstream
+ExecutorAgent will translate your plan into tool calls and perform the work.
+Do NOT call tools yourself; you have none.
 
-Decide based strictly on the findings:
-- If one or more of these actions are warranted, call the corresponding tool(s)
-  with concrete arguments.
-- If no action is warranted, return a short text explanation of why.
+The ExecutorAgent has the following tools available. Propose actions that map
+to one of them:
+
+- update_task_attribute(task_id, attribute, value)
+    Update one column on a task in the process database. Allowed attributes:
+    name, team, status, business_day, owner, description.
+
+- update_task_field(task_id, field, value)
+    Update a property on the Neo4j :Task node (graph view of the same task).
+
+- add_node(node_type, fields)
+    Create a new :Evidence or :Decision node. `node_type` must be exactly
+    "Evidence" or "Decision". Use this when the event introduces a new
+    piece of evidence or a new recorded decision.
+
+- link_to_task(task_id, node_type, node_id)
+    Attach an existing :Evidence or :Decision node to a task.
+
+For each action you propose, be unambiguous:
+- the task_id it applies to (verbatim from the findings)
+- the field/attribute name or the node_id
+- the new value (or node_type for creates)
+
+Example output if action is needed:
+  update_task_attribute(T05, status, complete)
+  link_to_task(T05, Evidence, ev-001)
+
+If no action is warranted, begin your response with the exact phrase
+"No action proposed." followed by a brief explanation.
 
 Cite task_ids, evidence_ids, and decision_ids verbatim from the findings.
 Do not invent identifiers."""
@@ -82,28 +84,13 @@ def _extract_text(items: Any) -> str:
 
 
 def _render_proposed_actions(content: Any) -> str:
-    """Turn an LLM response into a human-readable proposal string.
+    """The LogicAgent has no tools, so the LLM response is plain text.
 
-    The LLM either returns plain text (no action) or a list of FunctionCalls.
-    Tool calls are NOT executed; they are formatted as proposals.
+    Defensive: if for some reason the response isn't a string, fall back
+    to repr so we don't crash the pipeline on a malformed shape.
     """
     if isinstance(content, str):
-        return f"No action proposed.\n\n{content}"
-
-    if isinstance(content, list):
-        lines: List[str] = ["Proposed actions (not executed):"]
-        for call in content:
-            if isinstance(call, FunctionCall):
-                try:
-                    args = json.loads(call.arguments)
-                    args_render = ", ".join(f"{k}={v!r}" for k, v in args.items())
-                except (json.JSONDecodeError, TypeError):
-                    args_render = call.arguments
-                lines.append(f"  - {call.name}({args_render})")
-            else:
-                lines.append(f"  - (unrecognized) {call!r}")
-        return "\n".join(lines)
-
+        return content
     return f"(unrecognized response shape: {content!r})"
 
 
@@ -111,18 +98,14 @@ class LogicAgent(RoutedAgent):
     def __init__(
         self,
         logic_topic_type: str,
+        executor_topic_type: str,
         expected_sources: Set[str],
         model_client: ChatCompletionClient,
-        tools: List[MCPToolWrapper],
     ) -> None:
         super().__init__(logic_topic_type)
+        self._executor_topic_type = executor_topic_type
         self._expected_sources = set(expected_sources)
         self._model_client = model_client
-        # Tools are loaded so the LLM SEES them in its schema. They are NOT
-        # invoked in this pass — `_render_proposed_actions` intercepts the
-        # FunctionCalls and renders them instead.
-        self._tools = {tool.name: tool for tool in tools}
-        self._tool_schema = [tool.schema for tool in tools]
         # Single-threaded runtime + one event at a time => a bare dict is fine.
         # When events become concurrent this needs to be keyed by event_id.
         self._pending: Optional[Dict[str, str]] = None
@@ -187,36 +170,73 @@ class LogicAgent(RoutedAgent):
                     source="orchestrator",
                 ),
             ],
-            tools=self._tool_schema,
             cancellation_token=ctx.cancellation_token,
         )
 
         proposed_text = _render_proposed_actions(llm_result.content)
-        console.final_answer_box(
-            "Logic :: decision (propose-only)", proposed_text
-        )
-        # No downstream consumer yet — the final_answer_box is the user-visible
-        # output. When the interpreter / write-back path is wired up, that's
-        # where this proposal will go next.
+        console.section("Logic :: action plan", color=console.cyan)
+        console.body(proposed_text)
+
+        # No-action case: nothing to critique, no Yes/No routing to make.
+        if proposed_text.startswith("No action proposed"):
+            console.final_answer_box(
+                "Logic :: decision (no action)", proposed_text
+            )
+            return
+
+        # Single-shot policy critique. The LogicAgent does NOT execute or
+        # escalate yet — both branches terminate at the console until the
+        # ExecutionAgent and HumanEscalation paths are wired.
+        console.section("Logic :: policy critique", color=console.cyan)
+        results = await critique(findings_text, proposed_text)
+        for r in results:
+            mark = "passed" if r.passed else "failed"
+            console.kv(f"  {mark} {r.policy}", r.reason)
+
+        if all(r.passed for r in results):
+            decision_summary = "Yes — plan routed to ExecutorAgent."
+            console.final_answer_box(
+                "Logic :: decision",
+                f"{proposed_text}\n\n{decision_summary}",
+            )
+            # Publish AFTER rendering the box so the executor's output appears
+            # below the box rather than interleaved with it. The plan flows
+            # as plain text in the AgentsTask context; the Executor's LLM
+            # reads it and decides which write tools to invoke.
+            await self.publish_message(
+                AgentsTask(
+                    context=[proposed_text],
+                    source=EventSources.AGENT,
+                ),
+                topic_id=TopicId(self._executor_topic_type, source=self.id.key),
+            )
+        else:
+            failed = [r.policy for r in results if not r.passed]
+            decision_summary = (
+                "No — would route to HumanEscalation (not yet wired). "
+                f"Failed policies: {'; '.join(failed)}"
+            )
+            console.final_answer_box(
+                "Logic :: decision",
+                f"{proposed_text}\n\n{decision_summary}",
+            )
 
 
 async def register_logic_agent(
     runtime: SingleThreadedAgentRuntime,
     agent_topic_type: str,
+    executor_topic_type: str,
     expected_sources: Set[str],
     model_client: ChatCompletionClient,
 ) -> LogicAgent:
-    mcp_client = MCPClient()
-    tools = await mcp_client.get_tools(include=LOGIC_TOOLS)
-
     agent = await LogicAgent.register(
         runtime,
         type=agent_topic_type,
         factory=lambda: LogicAgent(
             logic_topic_type=agent_topic_type,
+            executor_topic_type=executor_topic_type,
             expected_sources=expected_sources,
             model_client=model_client,
-            tools=tools,
         ),
     )
     await runtime.add_subscription(
