@@ -21,7 +21,7 @@ _neo4j_driver: Any | None = None
 # When Neo4j is unavailable or introspection fails — keep aligned with mock loader graph.
 STATIC_SCHEMA_FALLBACK = (
     "Neo4j graph schema (static fallback — live introspection unavailable):\n"
-    "  (:Task {task_id, business_day, name, team, state, owner, reviewer, approver,\n"
+    "  (:Task {task_id, business_day, name, team, status, owner, reviewer, approver,\n"
     "          data_source, description, upstream_dependencies, completion_indicator,\n"
     "          attributes})\n"
     "  (:Evidence {evidence_id, task_id, source, summary, occurred_at})\n"
