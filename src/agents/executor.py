@@ -10,7 +10,8 @@ from src.mcp.client import MCPClient
 EXECUTOR_TOOLS = [
     "update_task_attribute",
     "update_task_field",
-    "link_evidence",
+    "add_node",
+    "link_to_task",
 ]
 
 
