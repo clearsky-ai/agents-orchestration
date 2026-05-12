@@ -27,7 +27,7 @@ orchestrator points you to, traverse the dependency graph and surface the broade
   and what the **blast radius** of the signal looks like.
 
 Stay focused on graph-level context; do not duplicate the EvidenceAnalyst's quotes
-or the ProcessStateAnalyst's state breakdown."""
+or the ProcessStateAnalyst's status breakdown."""
 
 
 async def register_context_research_agent(

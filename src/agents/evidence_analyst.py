@@ -10,17 +10,17 @@ from src.mcp.client import MCPClient
 EVIDENCE_ANALYST_TOOLS = [
     "get_evidence_trace",
     "find_similar_decisions",
+    "explain_blocker",
 ]
 
 SYSTEM_PROMPT = """You are the EvidenceAnalyst.
 
-Your job is to ground the email/signal in the **evidence trail** of the related task(s):
+Your job is to ground the event in the **evidence trail** of the related task(s):
 - Pull recent evidence rows (emails, slack notes, observations) with get_evidence_trace.
 - Check for prior decisions on the same task with find_similar_decisions (precedents,
   manual overrides, variance tolerances).
-- If the orchestrator's plan asks you to attach new evidence, use link_evidence.
-- Cite evidence_id and decision_id values verbatim. Quote the relevant summary line
-  so the orchestrator can fuse it with the process state and graph context.
+- If a task is blocked, use explain_blocker to surface the reason behind the block.
+- Cite evidence_id and decision_id values verbatim. Quote the relevant summary line.
 
 Be terse: facts + citations, not commentary."""
 
