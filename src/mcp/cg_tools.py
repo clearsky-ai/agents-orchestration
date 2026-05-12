@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from mcp.server.fastmcp import FastMCP
 from neo4j import GraphDatabase
@@ -115,6 +116,36 @@ def _records_to_tasks_edges(records: list[Any]) -> tuple[list[dict[str, Any]], l
         for v in record.values():
             _collect_graph_value(v, tasks_map, edges, seen)
     return list(tasks_map.values()), edges
+
+
+def _coerce_neo4j_property(value: Any) -> Any:
+    """Map Python values to Neo4j-supported property types (primitives or JSON strings)."""
+    if value is None:
+        return None
+    if isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, dict):
+        return json.dumps(value)
+    if isinstance(value, list):
+        if value and not all(
+            isinstance(x, (str, int, float, bool)) or x is None for x in value
+        ):
+            return json.dumps(value)
+        return value
+    return str(value)
+
+
+def _cypher_quoted_label(label: str) -> str:
+    """Quote a label for Cypher; ``label`` must already be allow-listed (e.g. from db.labels())."""
+    return "`" + label.replace("`", "``") + "`"
+
+
+# Primary id property per label (aligns with scripts/load_mock_neo4j.py constraints).
+_ID_PROPERTY_BY_LABEL: dict[str, str] = {
+    "Task": "task_id",
+    "Evidence": "evidence_id",
+    "Decision": "decision_id",
+}
 
 
 def register_cg_tools(server: FastMCP) -> None:
@@ -236,11 +267,149 @@ def register_cg_tools(server: FastMCP) -> None:
         return ok({"task_id": task_id, "field": field, "value": value})
 
     @server.tool()
-    def link_evidence(task_id: str, evidence_id: str) -> dict[str, Any]:
-        """Link evidence to a task. Evidence and task must both exist."""
+    def link_to_task(
+        task_id: str,
+        node_type: Literal["Evidence", "Decision"],
+        node_id: str,
+    ) -> dict[str, Any]:
+        """Point an :Evidence or :Decision node at a :Task (mock ``task_id`` + Neo4j ``FOR_TASK``)."""
         if task_id not in TASKS:
             return fail("TASK_NOT_FOUND", f"task {task_id} not in graph")
-        if evidence_id not in EVIDENCE:
-            return fail("EVIDENCE_NOT_FOUND", f"evidence {evidence_id} not in graph")
-        EVIDENCE[evidence_id]["task_id"] = task_id
-        return ok({"task_id": task_id, "evidence_id": evidence_id})
+        nt = node_type.strip()
+        if nt not in ("Evidence", "Decision"):
+            return fail(
+                "INVALID_NODE_TYPE",
+                "node_type must be 'Evidence' or 'Decision'.",
+            )
+        if nt == "Evidence":
+            if node_id not in EVIDENCE:
+                return fail("EVIDENCE_NOT_FOUND", f"evidence {node_id} not in graph")
+        else:
+            if not any(d.get("decision_id") == node_id for d in DECISIONS):
+                return fail("DECISION_NOT_FOUND", f"decision {node_id} not in graph")
+
+        driver = _get_neo4j_driver()
+        if driver is not None:
+
+            def _relink(tx: Any) -> None:
+                if nt == "Evidence":
+                    tx.run(
+                        "MATCH (:Evidence {evidence_id: $node_id})-[r:FOR_TASK]->() DELETE r",
+                        node_id=node_id,
+                    )
+                    tx.run(
+                        """
+                        MATCH (t:Task {task_id: $task_id})
+                        MATCH (e:Evidence {evidence_id: $node_id})
+                        MERGE (e)-[:FOR_TASK]->(t)
+                        """,
+                        task_id=task_id,
+                        node_id=node_id,
+                    )
+                else:
+                    tx.run(
+                        "MATCH (:Decision {decision_id: $node_id})-[r:FOR_TASK]->() DELETE r",
+                        node_id=node_id,
+                    )
+                    tx.run(
+                        """
+                        MATCH (t:Task {task_id: $task_id})
+                        MATCH (d:Decision {decision_id: $node_id})
+                        MERGE (d)-[:FOR_TASK]->(t)
+                        """,
+                        task_id=task_id,
+                        node_id=node_id,
+                    )
+
+            try:
+                with driver.session() as session:
+                    session.execute_write(_relink)
+            except Exception as e:
+                return fail("NEO4J_WRITE_FAILED", str(e))
+
+        if nt == "Evidence":
+            EVIDENCE[node_id]["task_id"] = task_id
+        else:
+            for row in DECISIONS:
+                if row.get("decision_id") == node_id:
+                    row["task_id"] = task_id
+                    break
+        return ok({"task_id": task_id, "node_type": nt, "node_id": node_id})
+
+    @server.tool()
+    def add_node(node_type: Literal["Evidence", "Decision"], fields: dict[str, Any]) -> dict[str, Any]:
+        """Create a Neo4j :Evidence or :Decision node with properties from ``fields``.
+
+        ``node_type`` must be ``Evidence`` or ``Decision``. The label must also exist in the
+        database (``CALL db.labels()``). If ``evidence_id`` / ``decision_id`` is missing from
+        ``fields``, a new UUID is assigned. On success, ``node_id`` is that id property value.
+        """
+        driver = _get_neo4j_driver()
+        if driver is None:
+            return fail(
+                "NEO4J_NOT_CONFIGURED",
+                "Set NEO4J_PASSWORD (and optionally NEO4J_URI, NEO4J_USER) to create nodes "
+                "in Neo4j.",
+            )
+        if not node_type or not node_type.strip():
+            return fail("INVALID_ARGUMENT", "node_type must be a non-empty string")
+        label = node_type.strip()
+        if label not in ("Evidence", "Decision"):
+            return fail(
+                "INVALID_NODE_TYPE",
+                "add_node only supports node_type 'Evidence' or 'Decision'.",
+            )
+        try:
+            with driver.session() as session:
+                rows = list(
+                    session.run(
+                        "CALL db.labels() YIELD label RETURN label AS label ORDER BY label"
+                    )
+                )
+        except Exception as e:
+            return fail("NEO4J_QUERY_FAILED", str(e))
+        existing = {str(r["label"]) for r in rows}
+        if label not in existing:
+            known = ", ".join(sorted(existing)) if existing else "(none)"
+            return fail(
+                "UNKNOWN_NODE_TYPE",
+                f"Label {label!r} is not present in the database. Existing labels: {known}.",
+            )
+        props: dict[str, Any] = {
+            k: _coerce_neo4j_property(v) for k, v in (fields or {}).items()
+        }
+        id_prop = _ID_PROPERTY_BY_LABEL.get(label)
+        if id_prop is not None and id_prop not in props:
+            props[id_prop] = str(uuid.uuid4())
+        quoted = _cypher_quoted_label(label)
+        cypher = f"CREATE (n:{quoted}) SET n += $props"
+
+        def _create(tx: Any) -> None:
+            tx.run(cypher, props=props)
+
+        try:
+            with driver.session() as session:
+                session.execute_write(_create)
+        except Exception as e:
+            return fail("NEO4J_WRITE_FAILED", str(e))
+
+        node_id = str(props[id_prop])
+        if label == "Evidence":
+            tid = props.get("task_id")
+            EVIDENCE[node_id] = {
+                "evidence_id": node_id,
+                "task_id": str(tid) if tid is not None else "",
+                "source": str(props.get("source") or ""),
+                "summary": str(
+                    props.get("summary") or props.get("content") or ""
+                ),
+                "occurred_at": str(props.get("occurred_at") or ""),
+            }
+        else:
+            row = {k: v for k, v in props.items()}
+            row["decision_id"] = node_id
+            if row.get("task_id") is None:
+                row["task_id"] = ""
+            DECISIONS.append(row)
+
+        return ok({"node_id": node_id})

@@ -27,7 +27,7 @@ from src.primitives.contracts import AgentResponse, AgentsTask, EventSources
 LOGIC_TOOLS = [
     "update_task_attribute",
     "update_task_field",
-    "link_evidence",
+    "link_to_task",
 ]
 
 
@@ -42,7 +42,7 @@ Your job is to decide what action (if any) the system should take in response
 to the event. You have three write tools available:
 - update_task_attribute — change a non-core attribute of a task.
 - update_task_field — change a core field of a task (e.g. status).
-- link_evidence — attach a new evidence record to a task.
+- link_to_task — attach an :Evidence or :Decision node to a task (by ``node_type`` and ``node_id``).
 
 Decide based strictly on the findings:
 - If one or more of these actions are warranted, call the corresponding tool(s)

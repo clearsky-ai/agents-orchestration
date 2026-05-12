@@ -1,0 +1,10 @@
+{
+    "task_transition_policy" : {
+        "ready_to_in_progress" : 
+            ["Done by the owner",
+            "upstream dependencies are done"],
+        "in_progress_to_complete" : 
+            ["Done by the owner",
+            "Task approval is received"]
+    }
+}
