@@ -392,4 +392,24 @@ def register_cg_tools(server: FastMCP) -> None:
                 session.execute_write(_create)
         except Exception as e:
             return fail("NEO4J_WRITE_FAILED", str(e))
-        return ok({"node_id": str(props[id_prop])})
+
+        node_id = str(props[id_prop])
+        if label == "Evidence":
+            tid = props.get("task_id")
+            EVIDENCE[node_id] = {
+                "evidence_id": node_id,
+                "task_id": str(tid) if tid is not None else "",
+                "source": str(props.get("source") or ""),
+                "summary": str(
+                    props.get("summary") or props.get("content") or ""
+                ),
+                "occurred_at": str(props.get("occurred_at") or ""),
+            }
+        else:
+            row = {k: v for k, v in props.items()}
+            row["decision_id"] = node_id
+            if row.get("task_id") is None:
+                row["task_id"] = ""
+            DECISIONS.append(row)
+
+        return ok({"node_id": node_id})

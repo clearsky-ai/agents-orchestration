@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Optional
+
 from dotenv import load_dotenv
 
 from src.agents.context_research_agent import register_context_research_agent
@@ -9,16 +13,16 @@ from src.primitives.contracts import AgentsTask, AgentstopicTypes, EventSources
 
 load_dotenv()
 
-from src.common.llm.azure import get_azure_lm
 from autogen_core import SingleThreadedAgentRuntime, TopicId
+from autogen_core.models import ChatCompletionClient
+
+from src.common.llm.azure import get_azure_lm
 
 
-async def main(input_method: callable):
-    single_threaded_runtime = SingleThreadedAgentRuntime()
-
-    azure_llm = get_azure_lm()
-
-    # Specialists — each replies to the LogicAgent topic.
+async def _register_default_agents(
+    single_threaded_runtime: SingleThreadedAgentRuntime,
+    azure_llm: ChatCompletionClient,
+) -> None:
     await register_process_state_analyst(
         single_threaded_runtime,
         model_client=azure_llm,
@@ -40,8 +44,6 @@ async def main(input_method: callable):
         agent_topic_type=AgentstopicTypes.CONTEXT_RESEARCH_AGENT.value,
         user_topic_type=AgentstopicTypes.LOGIC.value,
     )
-
-    # Orchestrator: thin fan-out only. No LLM, no aggregation.
     await register_orchestration_agent(
         single_threaded_runtime,
         agent_topic_type=AgentstopicTypes.ORCHESTRATION.value,
@@ -51,10 +53,6 @@ async def main(input_method: callable):
             AgentstopicTypes.CONTEXT_RESEARCH_AGENT.value,
         ],
     )
-
-    # LogicAgent: aggregates the three analyst replies, runs an LLM with the
-    # write tools' schemas, and renders the LLM's decision as proposed actions.
-    # Propose-only — tool calls are NOT executed.
     await register_logic_agent(
         single_threaded_runtime,
         agent_topic_type=AgentstopicTypes.LOGIC.value,
@@ -66,19 +64,40 @@ async def main(input_method: callable):
         model_client=azure_llm,
     )
 
-    single_threaded_runtime.start()
-    print("Agents registered successfully")
 
-    # Inject one event into the pipeline. The interpreter will replace this
-    # stdin prompt once it lands.
+async def run_pipeline_once(
+    event_text: str,
+    *,
+    model_client: Optional[ChatCompletionClient] = None,
+) -> None:
+    """Start a fresh runtime, register default agents, publish one event, wait until idle.
+
+    If ``model_client`` is omitted, this function creates an Azure client with
+    ``get_azure_lm()`` and closes it before returning. If a client is passed in,
+    the caller owns its lifecycle (useful when replaying many events).
+    """
+    own_client = model_client is None
+    azure_llm = model_client or get_azure_lm()
+    single_threaded_runtime = SingleThreadedAgentRuntime()
+    try:
+        await _register_default_agents(single_threaded_runtime, azure_llm)
+        single_threaded_runtime.start()
+        print("Agents registered successfully")
+
+        await single_threaded_runtime.publish_message(
+            AgentsTask(context=[event_text], source=EventSources.USER_CHAT),
+            topic_id=TopicId(AgentstopicTypes.ORCHESTRATION.value, source="runtime"),
+        )
+
+        await single_threaded_runtime.stop_when_idle()
+    finally:
+        if own_client:
+            await azure_llm.close()
+
+
+async def main(input_method: callable) -> None:
     event_text = input_method("Please enter the event description: ")
-    await single_threaded_runtime.publish_message(
-        AgentsTask(context=[event_text], source=EventSources.USER_CHAT),
-        topic_id=TopicId(AgentstopicTypes.ORCHESTRATION.value, source="runtime"),
-    )
-
-    await single_threaded_runtime.stop_when_idle()
-    await azure_llm.close()
+    await run_pipeline_once(event_text)
 
 
 if __name__ == "__main__":
