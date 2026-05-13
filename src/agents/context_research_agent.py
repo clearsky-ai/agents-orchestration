@@ -26,6 +26,7 @@ orchestrator points you to, traverse the dependency graph and surface the broade
 - Report: which neighboring tasks are at risk, which historical decisions are relevant,
   and what the **blast radius** of the signal looks like.
 
+Always include the owner or assignee of the task in the response.
 Stay focused on graph-level context; do not duplicate the EvidenceAnalyst's quotes
 or the ProcessStateAnalyst's status breakdown."""
 

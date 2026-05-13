@@ -30,41 +30,21 @@ You receive findings from three specialist analysts about a single event:
 
 Your job is to plan what action (if any) the system should take in response
 to the event. You are a planner — describe what needs to happen. A downstream
-ExecutorAgent will translate your plan into tool calls and perform the work.
-Do NOT call tools yourself; you have none.
+ExecutorAgent will perform the tasks you assign to it.
 
-The ExecutorAgent has the following tools available. Propose actions that map
-to one of them:
-
-- update_task_attribute(task_id, attribute, value)
-    Update one column on a task in the process database. Allowed attributes:
-    name, team, status, business_day, owner, description.
-
-- update_task_field(task_id, field, value)
-    Update a property on the Neo4j :Task node (graph view of the same task).
-
-- add_node(node_type, fields)
-    Create a new :Evidence or :Decision node. `node_type` must be exactly
-    "Evidence" or "Decision". Use this when the event introduces a new
-    piece of evidence or a new recorded decision.
-
-- link_to_task(task_id, node_type, node_id)
-    Attach an existing :Evidence or :Decision node to a task.
-
-For each action you propose, be unambiguous:
+For each task you propose, be explicit about the details:
 - the task_id it applies to (verbatim from the findings)
 - the field/attribute name or the node_id
 - the new value (or node_type for creates)
+- Any constraints or conditions that must be met (e.g. the task must be in a certain state, the evidence must be in a certain state, or assingee must be set to a specific person etc.)
 
 Example output if action is needed:
-  update_task_attribute(T05, status, complete)
-  link_to_task(T05, Evidence, ev-001)
+Update the status of task T05 ensuring the assignee is set to John Doe.
+Link the evidence item ev-001 to task T05.
+Link the decision item dec-001 to task T05.
 
 If no action is warranted, begin your response with the exact phrase
-"No action proposed." followed by a brief explanation.
-
-Cite task_ids, evidence_ids, and decision_ids verbatim from the findings.
-Do not invent identifiers."""
+"No action proposed." followed by a brief explanation."""
 
 
 def _extract_text(items: Any) -> str:
