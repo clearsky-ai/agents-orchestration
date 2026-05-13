@@ -9,11 +9,7 @@ from pydantic import BaseModel
 from src.common.llm.dspy import get_lm
 
 
-# --- Configure DSPy's LM once on import -----------------------------------
-# This module is the only DSPy consumer for now, so configuring at import
-# time is the simplest scope. If a second module starts using DSPy with
-# different settings, lift this into a shared init.
-dspy.configure(lm=get_lm())
+# LM is configured per-call via dspy.context() to stay thread-safe.
 
 
 # --- Policy catalog -------------------------------------------------------
@@ -139,10 +135,15 @@ async def critique(
     defaults to the module-level POLICIES if none is passed.
     """
     catalog = policies if policies is not None else POLICIES
-    prediction = await asyncio.to_thread(
-        _criticiser.forward,
-        analyst_findings=findings,
-        proposed_actions=plan,
-        policies=catalog,
-    )
+    lm = get_lm()
+
+    def _run() -> dspy.Prediction:
+        with dspy.context(lm=lm):
+            return _criticiser.forward(
+                analyst_findings=findings,
+                proposed_actions=plan,
+                policies=catalog,
+            )
+
+    prediction = await asyncio.to_thread(_run)
     return prediction.reasoning, list(prediction.results)
