@@ -1,0 +1,451 @@
+{
+  "tasks": [
+    {
+      "task_id": "T01",
+      "upstream_dependencies": []
+    },
+    {
+      "task_id": "T02",
+      "upstream_dependencies": []
+    },
+    {
+      "task_id": "T03",
+      "upstream_dependencies": []
+    },
+    {
+      "task_id": "T04",
+      "upstream_dependencies": [
+        "T02"
+      ]
+    },
+    {
+      "task_id": "T05",
+      "upstream_dependencies": [
+        "T02"
+      ]
+    },
+    {
+      "task_id": "T06",
+      "upstream_dependencies": [
+        "T04",
+        "T05"
+      ]
+    },
+    {
+      "task_id": "T07",
+      "upstream_dependencies": [
+        "T03"
+      ]
+    },
+    {
+      "task_id": "T08",
+      "upstream_dependencies": [
+        "T03",
+        "T07"
+      ]
+    },
+    {
+      "task_id": "T09",
+      "upstream_dependencies": [
+        "T01"
+      ]
+    },
+    {
+      "task_id": "T10",
+      "upstream_dependencies": [
+        "T05",
+        "T06"
+      ]
+    },
+    {
+      "task_id": "T11",
+      "upstream_dependencies": [
+        "T06"
+      ]
+    },
+    {
+      "task_id": "T12",
+      "upstream_dependencies": [
+        "T09"
+      ]
+    },
+    {
+      "task_id": "T13",
+      "upstream_dependencies": [
+        "T07",
+        "T08"
+      ]
+    },
+    {
+      "task_id": "T14",
+      "upstream_dependencies": [
+        "T11",
+        "T12",
+        "T13"
+      ]
+    },
+    {
+      "task_id": "T15",
+      "upstream_dependencies": [
+        "T10",
+        "T14"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "03c33f37-4503-401c-abb8-f328bd7c3e72",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "07c03d45-a981-4fe5-b987-f874bfe80e36",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "08103fb1-7e1a-4e2c-85d8-ee5fcc6dbc56",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "0c2fd45c-a779-4ed2-883e-19a0d3b98f88",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "13c7614c-ef84-4e80-acd3-6339f9f788be",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "20d3c0b1-4a5f-4d9b-acff-672e2f793177",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "25ab7374-26db-461a-be6d-d6a9b0a6b05f",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "2c03cff7-3c90-4c5d-a084-f25d92e08747",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "2e181f0d-3139-412c-b939-22368c4f4fcb",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "35a307e7-fc91-4e2a-9c78-5d21adf3777f",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "3f8e8646-d794-478d-b5c3-8682862916b3",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "463d677b-c116-42e4-ae54-c38ad62d35d0",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "49a098ee-70dc-43c0-9526-138767da5b0c",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "50e702d7-f4cd-491b-96af-7208a94ac45d",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "5583227b-25c1-410f-afc0-3669067bd732",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "59983e3f-5352-47b5-a4de-8a0e2b7ec794",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "6388851d-f71b-49a1-94cf-b856ac2c6e95",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "6c2f58fb-9679-4cdd-807a-d891925bf4f3",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "6e3662f6-f45d-4473-a926-0efac65a5b2f",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "6fc7adca-bd25-48cf-a828-b8334592a646",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "77e1f11d-321e-458e-9855-d2eca34c057b",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "97d21a18-5180-4ebd-898b-dd1add2951fd",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "9d0aa010-18a6-42ba-bfae-dba067ebe94f",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "b08cba42-21f0-4041-81c3-634d7f0a95cb",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "b98d8472-2271-48c8-9153-626cc5c45157",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "be2aab96-d08d-4549-a346-b6699c51ea94",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "c4bc71a8-9338-497d-824c-652eb96e4a4f",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "c616ae61-5d25-4d26-9b8d-fe2c03521f63",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "ccb559bc-d540-496f-a75b-caf1f5ce483d",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "d38200c9-efb7-47f1-aff7-968c26eda6fa",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "e8bb56c7-03b9-4ae5-af36-1f544554cbe8",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
+      "sender": "Anthony Rivera",
+      "recipient": "Heather Walsh",
+      "task_id": "T01",
+      "evidence_id": "e937cdc9-a7e8-4adf-b3af-7cfe19c0bc5f",
+      "source": "email",
+      "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony"
+    },
+    {
+      "occurred_at": "2026-01-29T12:00:00Z",
+      "summary": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
+      "sender": "Heather Walsh",
+      "recipient": "Anthony Rivera",
+      "task_id": "T01",
+      "evidence_id": "ec9225cc-14d8-4c94-95da-22f474f7f282",
+      "source": "email",
+      "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather"
+    },
+    {
+      "occurred_at": "2026-05-10T14:30:00Z",
+      "summary": "Steven Price: EU regional payroll still being validated, expecting final by EOD tomorrow.",
+      "evidence_id": "ev-001",
+      "source": "email",
+      "task_id": "T05"
+    },
+    {
+      "occurred_at": "2026-05-10T16:05:00Z",
+      "summary": "Melissa Carter: T06 cannot start until T05 register lands; will draft JE template once payroll is confirmed.",
+      "evidence_id": "ev-002",
+      "source": "slack",
+      "task_id": "T06"
+    }
+  ],
+  "decisions": [
+    {
+      "decided_at": "2026-02-15T09:00:00Z",
+      "decision_id": "dec-001",
+      "kind": "manual_override",
+      "rationale": "Prior close: accepted payroll accrual JE despite one missing regional confirmation; variance within 0.4% tolerance.",
+      "decided_by": "user.melissa.carter",
+      "task_id": "T06"
+    }
+  ]
+}

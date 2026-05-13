@@ -26,16 +26,22 @@ register_cg_tools(server)
 
 CURRENT_BUSINESS_DAY = "BD+2"
 
-db = sqlite3.connect(":memory:")
+# File-backed SQLite so writes survive across MCP subprocess restarts.
+# Every tool call spawns a fresh subprocess; pointing at a file means the
+# next subprocess opens the same database and reads whatever the previous
+# call wrote. Delete this file to reset the runtime state to the seed.
+_DB_PATH = _REPO_ROOT / "src" / "data" / "runtime_state.db"
+_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+db = sqlite3.connect(str(_DB_PATH))
 db.row_factory = sqlite3.Row
 
 db.executescript("""
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     task_id TEXT PRIMARY KEY,
     name TEXT, team TEXT, status TEXT,
     business_day TEXT, owner TEXT, description TEXT
 );
-CREATE TABLE activities (
+CREATE TABLE IF NOT EXISTS activities (
     activity_id TEXT PRIMARY KEY,
     task_id TEXT, kind TEXT, actor TEXT, at TEXT
 );
@@ -48,19 +54,26 @@ def rows(cur):
     return [dict(row) for row in cur.fetchall()]
 
 
+# Dependencies are static (not written by any tool) — always reload from the
+# seed JSON. Tasks are seeded from the JSON only when the SQLite file is fresh
+# (the tasks table is empty); on subsequent startups we trust whatever the DB
+# has, so writes made by previous subprocesses are preserved.
 _data_path = Path(__file__).resolve().parent.parent / "data" / "mock_data.json"
 _data = json.loads(_data_path.read_text())
 
 for t in _data["tasks"]:
-    db.execute(
-        "INSERT INTO tasks (task_id, name, team, status, business_day, owner, description) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
-        (t["task_id"], t["name"], t["team"], t["status"],
-         t["business_day"], t["owner"], t["description"]),
-    )
     for dep in t["upstream_dependencies"]:
         DEPENDENCIES.append({"upstream": dep, "downstream": t["task_id"]})
-db.commit()
+
+if db.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"] == 0:
+    for t in _data["tasks"]:
+        db.execute(
+            "INSERT INTO tasks (task_id, name, team, status, business_day, owner, description) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (t["task_id"], t["name"], t["team"], t["status"],
+             t["business_day"], t["owner"], t["description"]),
+        )
+    db.commit()
 
 
 @server.resource("schema://sql")
@@ -77,7 +90,7 @@ def sql_schema():
 @server.tool(
     name="run_sql_query",
     description=(
-        "Execute a read-only SELECT against the in-memory Process Orchestration database "
+        "Execute a read-only SELECT against the Process Orchestration database "
         "(tasks, activities). Use the schema://sql resource for table DDL. "
         "Non-SELECT statements are rejected."
     ),
@@ -129,8 +142,8 @@ def process_status():
 @server.tool(
     name="update_task_status",
     description=(
-        "Persist a single column update on one task by task_id. Allowed status: ready, in_progress, complete, blocked, not_ready. "
-        "Commits immediately to the in-memory store."
+        "Persist a status update on one task by task_id. Allowed status: ready, in_progress, complete, blocked, not_ready. "
+        "Commits immediately to the on-disk SQLite store; the next call sees the new value."
     ),
 )
 def update_task_status(task_id: str, status: str):
