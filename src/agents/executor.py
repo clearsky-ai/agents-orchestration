@@ -20,9 +20,6 @@ def _notify(text: str) -> None:
 
 EXECUTOR_TOOLS = [
     "update_task_attribute",
-    "update_task_field",
-    "add_node",
-    "link_to_task",
 ]
 
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Load mock_data.json into Neo4j as Task, Evidence, and Decision nodes.
 
-Nested JSON (e.g. task ``attributes``) is stored as a string property so Neo4j
-accepts primitive-only property maps.
+Task nodes intentionally store only ``task_id``. Other task fields from the
+source JSON are used only for reconstructing relationships, not node properties.
 """
 
 from __future__ import annotations
@@ -48,15 +48,6 @@ def _value_for_neo4j(value):
     return str(value)
 
 
-def _task_props(record: dict) -> dict:
-    props = {}
-    for k, v in record.items():
-        if k in ("task_id", "upstream_dependencies"):
-            continue
-        props[k] = _value_for_neo4j(v)
-    return props
-
-
 def _row_props(record: dict, exclude: set[str]) -> dict:
     return {k: _value_for_neo4j(v) for k, v in record.items() if k not in exclude}
 
@@ -71,14 +62,12 @@ def ensure_constraints(tx) -> None:
 def load_tasks(tx, tasks: list[dict]) -> None:
     for row in tasks:
         tid = row["task_id"]
-        props = _task_props(row)
         tx.run(
             """
             MERGE (t:Task {task_id: $task_id})
-            SET t += $props
+            SET t = {task_id: $task_id}
             """,
             task_id=tid,
-            props=props,
         )
 
 
