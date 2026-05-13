@@ -119,4 +119,4 @@ async def critique(
         proposed_actions=plan,
         policies=catalog,
     )
-    return list(prediction.results)
+    return prediction.reasoning, list(prediction.results)
