@@ -8,7 +8,9 @@
         "content": "Heather,\n\nThe January AP cutoff notice is drafted and ready for distribution. Cutoff for invoice submissions is Thursday 1/29 at 5:00 PM local time for each region. Rush submissions will be accepted through Friday 1/30 at noon ET with director-level approval.\n\nAnya, Wei - your localized versions should go out within the hour once Heather approves. Anya, please confirm the EMEA vendor list has been updated to include the three new suppliers we onboarded in December.\n\nAnthony",
         "source": "email",
         "occurred_at": "2026-01-29T12:00:00Z",
-        "task_id": "T01"
+        "task_id": "T01",
+        "sender": "Anthony Rivera",
+        "recipient": "Heather Walsh"
       }
     },
     {
@@ -19,7 +21,9 @@
         "content": "Anthony,\n\nApproved. Go ahead and send. Make sure the rush submission instructions are clear - last month we had two budget owners submit after the rush window and argue they did not see the deadline.\n\nHeather",
         "source": "email",
         "occurred_at": "2026-01-29T12:00:00Z",
-        "task_id": "T01"
+        "task_id": "T01",
+        "sender": "Heather Walsh",
+        "recipient": "Anthony Rivera"
       }
     }
   ]

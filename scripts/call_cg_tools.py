@@ -15,6 +15,7 @@ Run from the repo root (``.env`` in the repo root is loaded automatically)::
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,19 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 load_dotenv(REPO_ROOT / ".env")
+_CYPHER_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def _neo4j_driver() -> Any:
+    from src.mcp import cg_tools
+
+    driver = cg_tools._get_neo4j_driver()
+    if driver is None:
+        raise RuntimeError(
+            "call_cg_tools requires Neo4j. Set NEO4J_PASSWORD "
+            "(and optionally NEO4J_URI, NEO4J_USER), then load the graph first."
+        )
+    return driver
 
 
 def _capture_cg_tools() -> dict[str, Any]:
@@ -60,9 +74,84 @@ def _print_call(name: str, args: dict[str, Any], result: dict[str, Any]) -> None
     print(json.dumps(out, indent=2, default=str))
 
 
-def main() -> None:
-    from src.mcp import cg_tools
+def _cypher_quoted_property(prop: str) -> str:
+    if not _CYPHER_IDENTIFIER.fullmatch(prop):
+        raise ValueError(f"Invalid property name: {prop!r}")
+    return "`" + prop.replace("`", "``") + "`"
 
+
+def _task_field_state(task_id: str, field: str) -> tuple[bool, Any]:
+    driver = _neo4j_driver()
+    with driver.session() as session:
+        record = session.run(
+            "MATCH (t:Task {task_id: $task_id}) RETURN t[$field] AS value, "
+            "$field IN keys(t) AS exists",
+            task_id=task_id,
+            field=field,
+        ).single()
+    if record is None:
+        raise RuntimeError(f"task {task_id} not found in Neo4j")
+    return bool(record["exists"]), record["value"]
+
+
+def _restore_task_field(task_id: str, field: str, existed: bool, value: Any) -> None:
+    driver = _neo4j_driver()
+    quoted_field = _cypher_quoted_property(field)
+    with driver.session() as session:
+        if existed:
+            session.run(
+                f"MATCH (t:Task {{task_id: $task_id}}) SET t.{quoted_field} = $value",
+                task_id=task_id,
+                value=value,
+            ).consume()
+        else:
+            session.run(
+                f"MATCH (t:Task {{task_id: $task_id}}) REMOVE t.{quoted_field}",
+                task_id=task_id,
+            ).consume()
+
+
+def _current_task_link(node_type: str, node_id: str) -> str | None:
+    driver = _neo4j_driver()
+    if node_type == "Evidence":
+        query = """
+        MATCH (n:Evidence {evidence_id: $node_id})
+        OPTIONAL MATCH (n)-[:FOR_TASK]->(t:Task)
+        RETURN t.task_id AS task_id
+        """
+    elif node_type == "Decision":
+        query = """
+        MATCH (n:Decision {decision_id: $node_id})
+        OPTIONAL MATCH (n)-[:FOR_TASK]->(t:Task)
+        RETURN t.task_id AS task_id
+        """
+    else:
+        raise ValueError(f"Unsupported node_type: {node_type}")
+    with driver.session() as session:
+        record = session.run(query, node_id=node_id).single()
+    if record is None:
+        raise RuntimeError(f"{node_type} {node_id} not found in Neo4j")
+    return record["task_id"]
+
+
+def _restore_task_link(tools: dict[str, Any], node_type: str, node_id: str, task_id: str | None) -> None:
+    if task_id is None:
+        return
+    result = tools["link_to_task"](task_id, node_type, node_id)
+    if not result.get("ok"):
+        print(f"(restore {node_type} link skipped: {result})", file=sys.stderr)
+
+
+def _delete_evidence(node_id: str) -> None:
+    driver = _neo4j_driver()
+    with driver.session() as session:
+        session.run(
+            "MATCH (e:Evidence {evidence_id: $id}) DETACH DELETE e",
+            id=node_id,
+        ).consume()
+
+
+def main() -> None:
     tools = _capture_cg_tools()
     expected = (
         "validate_query",
@@ -111,7 +200,7 @@ def main() -> None:
     )
 
     tid, field = "T01", "_script_demo_field"
-    before = cg_tools.TASKS[tid].get(field)
+    field_existed, before_value = _task_field_state(tid, field)
     try:
         _print_call(
             "update_task_field",
@@ -119,14 +208,10 @@ def main() -> None:
             tools["update_task_field"](tid, field, "script-was-here"),
         )
     finally:
-        if before is None:
-            cg_tools.TASKS[tid].pop(field, None)
-        else:
-            cg_tools.TASKS[tid][field] = before
+        _restore_task_field(tid, field, field_existed, before_value)
 
     eid = "ev-001"
-    ev = cg_tools.EVIDENCE[eid]
-    prev_task = ev["task_id"]
+    prev_task = _current_task_link("Evidence", eid)
     try:
         _print_call(
             "link_to_task",
@@ -134,13 +219,10 @@ def main() -> None:
             tools["link_to_task"]("T01", "Evidence", eid),
         )
     finally:
-        ev["task_id"] = prev_task
+        _restore_task_link(tools, "Evidence", eid, prev_task)
 
     did = "dec-001"
-    dec = next((d for d in cg_tools.DECISIONS if d.get("decision_id") == did), None)
-    if dec is None:
-        raise RuntimeError("call_cg_tools: mock_data.json must include decision dec-001")
-    prev_dec_task = dec["task_id"]
+    prev_dec_task = _current_task_link("Decision", did)
     try:
         _print_call(
             "link_to_task",
@@ -148,7 +230,7 @@ def main() -> None:
             tools["link_to_task"]("T01", "Decision", did),
         )
     finally:
-        dec["task_id"] = prev_dec_task
+        _restore_task_link(tools, "Decision", did, prev_dec_task)
 
     add_args: dict[str, Any] = {
         "node_type": "Evidence",
@@ -163,14 +245,9 @@ def main() -> None:
     _print_call("add_node", add_args, add_result)
     if add_result.get("ok") and add_args["node_type"] == "Evidence":
         eid_created = add_result.get("node_id")
-        driver = cg_tools._get_neo4j_driver()
-        if driver is not None and isinstance(eid_created, str) and eid_created:
+        if isinstance(eid_created, str) and eid_created:
             try:
-                with driver.session() as session:
-                    session.run(
-                        "MATCH (e:Evidence {evidence_id: $id}) DETACH DELETE e",
-                        id=eid_created,
-                    )
+                _delete_evidence(eid_created)
             except Exception as exc:
                 print(f"(add_node cleanup skipped: {exc})", file=sys.stderr)
 

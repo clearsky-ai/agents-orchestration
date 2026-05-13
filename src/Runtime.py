@@ -78,8 +78,6 @@ async def _register_default_agents(
         user_topic_type=AgentstopicTypes.EXECUTOR_DONE.value,
     )
 
-    single_threaded_runtime.start()
-    print("Agents registered successfully")
 
 async def run_pipeline_once(
     event_text: str,
