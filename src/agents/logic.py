@@ -36,7 +36,7 @@ For each task you propose, be explicit about the details:
 - the task_id it applies to (verbatim from the findings)
 - the field/attribute name or the node_id
 - the new value (or node_type for creates)
-- Any constraints or conditions that must be met (e.g. the task must be in a certain state, the evidence must be in a certain state, or assingee must be set to a specific person etc.)
+- Any constraints or conditions that must be met (e.g. the task must be in a certain state, the evidence must be in a certain state, or owner must be set to a specific person etc.)
 
 Example output if action is needed:
 Update the status of task T05 ensuring the assignee is set to John Doe.
