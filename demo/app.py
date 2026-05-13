@@ -607,8 +607,6 @@ def render_outcome(stages: dict) -> None:
                     task = c.get("task_id", "")
                     attr = c.get("attribute", "").replace("_", " ").title()
                     val = c.get("value", "")
-                    label = f"**{attr}**" if attr else ""
-                    val_display = f"`{val}`" if val else ""
                     st.markdown(
                         f'<div style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid #f1f5f9">'
                         f'<span style="color:#16a34a;font-size:15px">✓</span>'
