@@ -4,7 +4,18 @@ from autogen_core import SingleThreadedAgentRuntime, TypeSubscription, models
 from autogen_core.models import SystemMessage
 
 from src.agents.base import AIAgent
+from src.common import console
 from src.mcp.client import MCPClient
+
+
+def _notify(text: str) -> None:
+    """Emit a user-facing notification after the executor finishes.
+
+    Hooked into the executor via ``completion_callback`` on ``AIAgent``.
+    Swap the body for a real channel (Slack / email / UI / webhook) when
+    ready; the call-site doesn't change.
+    """
+    console.final_answer_box("Notification :: action taken", text)
 
 
 EXECUTOR_TOOLS = [
@@ -54,6 +65,10 @@ async def register_executor_agent(
             tools=tools,
             agent_topic_type=agent_topic_type,
             user_topic_type=user_topic_type,
+            # Feed the executor's final LLM summary into the user-facing
+            # notification (defined locally above). Other agents don't pass
+            # a callback, so their replies don't pollute the notification.
+            completion_callback=_notify,
         ),
     )
 
