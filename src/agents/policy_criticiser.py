@@ -17,12 +17,21 @@ dspy.configure(lm=get_lm())
 
 
 # --- Policy catalog -------------------------------------------------------
-# Verbatim policy statements. The DSPy module interprets each one against
-# the findings + plan. Order matters: results come back in the same order.
-POLICIES: List[str] = [
-    "make sure that the owners are the ones that have the authority",
-    "upstream dependencies are done",
-]
+# Verbatim policy statements, keyed by policy family and then by the state
+# transition they govern. The DSPy module routes each proposed step to the
+# matching transition bucket and evaluates only those policies.
+POLICIES: dict[str, dict[str, list[str]]] = {
+    "task_transition_policy": {
+        "ready_to_in_progress": [
+            # "Done by the owner",
+            "upstream dependencies are done",
+        ],
+        "in_progress_to_complete": [
+            # "Done by the owner",
+            "Task approval is received",
+        ],
+    },
+}
 
 
 # --- Structured verdict shape ---------------------------------------------
@@ -36,15 +45,24 @@ class CritiqueResult(BaseModel):
 
 # --- DSPy signature -------------------------------------------------------
 class PolicyCritique(dspy.Signature):
-    """Audit a proposed action plan against a list of policies.
+    """Audit a proposed action plan against a catalog of policies.
 
-    For each policy in the input list, decide whether the plan satisfies it,
-    using the analyst findings as your only source of facts. Return one
-    CritiqueResult per policy, in the same order as the input list:
-      - policy: echo the policy statement verbatim
-      - passed: true if the plan clearly satisfies the policy, false otherwise
-      - reason: one or two sentences explaining the verdict, citing task_ids,
-        evidence_ids, decision_ids, owners, etc. verbatim from the findings
+    The policies catalog is a nested dict:
+      { policy_family: { state_transition: [policy_statement, ...] } }
+    For example, `task_transition_policy.ready_to_in_progress` lists the
+    policies that apply when a task moves from `ready` to `in_progress`.
+
+    Steps:
+      1. Read the proposed_actions and identify which state transition(s)
+         each step represents (e.g. `ready_to_in_progress`).
+      2. For each step, evaluate ONLY the policies listed under that
+         transition. Do not evaluate policies that don't apply.
+      3. Emit one CritiqueResult per (step, policy) pair you evaluate:
+           - policy: echo the policy statement verbatim
+           - passed: true if the plan clearly satisfies the policy, false otherwise
+           - reason: one or two sentences explaining the verdict, citing
+             task_ids, evidence_ids, decision_ids, owners, etc. verbatim
+             from the findings.
 
     Be strict. If the findings do not contain enough evidence to verify a
     policy holds, mark it failed and say what evidence is missing. Do not
@@ -63,11 +81,18 @@ class PolicyCritique(dspy.Signature):
             "arguments, or a statement that no action is needed."
         ),
     )
-    policies: list[str] = dspy.InputField(
-        desc="Policy catalog to evaluate against. Process in order.",
+    policies: dict[str, dict[str, list[str]]] = dspy.InputField(
+        desc=(
+            "Nested catalog: outer key is the policy family, inner key is "
+            "the state transition, value is the list of policy statements "
+            "to evaluate when that transition is proposed."
+        ),
     )
     results: list[CritiqueResult] = dspy.OutputField(
-        desc="One verdict per policy, in the same order as the input list.",
+        desc=(
+            "One verdict per (step, policy) pair evaluated. Only include "
+            "policies that apply to a transition present in the plan."
+        ),
     )
 
 
@@ -84,7 +109,7 @@ class _PolicyCriticiserModule(dspy.Module):
         self,
         analyst_findings: str,
         proposed_actions: str,
-        policies: list[str],
+        policies: dict[str, dict[str, list[str]]],
     ) -> dspy.Prediction:
         return self.predict(
             analyst_findings=analyst_findings,
@@ -102,15 +127,16 @@ _criticiser = _PolicyCriticiserModule()
 async def critique(
     findings: str,
     plan: str,
-    policies: List[str] | None = None,
-) -> List[CritiqueResult]:
+    policies: dict[str, dict[str, list[str]]] | None = None,
+) -> tuple[str, List[CritiqueResult]]:
     """Run the policy criticiser against a plan.
 
     DSPy modules are synchronous; this wraps the call in `asyncio.to_thread`
     so the autogen event loop isn't blocked while the LLM responds.
 
-    Returns one CritiqueResult per policy, in the same order as the input
-    (defaulting to the module-level POLICIES catalog).
+    Returns `(reasoning, results)` where `results` contains one
+    CritiqueResult per (step, policy) pair the model evaluated. The catalog
+    defaults to the module-level POLICIES if none is passed.
     """
     catalog = policies if policies is not None else POLICIES
     prediction = await asyncio.to_thread(
