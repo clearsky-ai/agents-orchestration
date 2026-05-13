@@ -1,0 +1,164 @@
+{
+    "events": [
+      {
+        "event_id": "e1",
+        "event_type": "create",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Melissa, Steven,\n\nWorking through the RSU/ESPP reconciliation for Q1 close and I have hit a discrepancy I cannot resolve on my own. Workday shows Senior Director Marcus Hoffstadt as terminated effective 12/15/2025. Shareworks has him flagged for full forfeiture of unvested awards (roughly 14,200 RSUs across two grants).\n\nThe issue: when I cross-checked against our equity grant ledger, I noticed Marcus had a non-standard arrangement noted in the prior quarter's working papers. There is a reference to a separation agreement with extended vesting, but I cannot find the underlying document. If standard forfeiture applies, we will reverse approximately $1.8M of SBC that was recognized in Q4 and prior. If extended vesting applies, that reversal is wrong and would materially understate Q1 SBC.\n\nI need confirmation on the actual terms before I can post the reconciliation file. Can someone help me locate the agreement, or point me to whoever has the authoritative copy?\n\nRachel",
+          "source": "email",
+          "occurred_at": "2026-01-29T11:42:00Z",
+          "task_id": "T04",
+          "sender": "Rachel Stein",
+          "recipient": [
+            "Melissa Carter",
+            "Steven Price"
+          ],
+          "attachments": [
+            "Q1_Equity_Recon_Draft.xlsx",
+            "Hoffstadt_Workday_Termination_Record.pdf"
+          ]
+        }
+      },
+      {
+        "event_id": "e2",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Rachel,\n\nGood catch. I have a vague recollection of this one. Marcus negotiated continued vesting through a transition period as part of his exit, and the agreement was held by our outside counsel rather than going through the standard HR workflow. That is why Workday shows a clean termination - the system was never told about the carve-out.\n\nI have asked HR to pull the signed agreement from the legal hold folder. Expect it later today. In the meantime, do not post the reconciliation. We need the agreement in hand before we touch the SBC entry.\n\nMelissa",
+          "source": "email",
+          "occurred_at": "2026-01-29T13:08:00Z",
+          "task_id": "T04",
+          "sender": "Melissa Carter",
+          "recipient": [
+            "Rachel Stein",
+            "Steven Price"
+          ],
+          "attachments": []
+        }
+      },
+      {
+        "event_id": "e3",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Rachel,\n\nHR sent the signed separation agreement (attached, redacted for confidentiality). Page 3, section 4.2: continued vesting through 6/30/2026 on both unvested grants, with quarterly tranche release on the original schedule. So the Shareworks forfeiture flag is wrong, and the correct treatment is to recognize SBC expense as if Marcus were still active through Q2.\n\nGo ahead and override the Shareworks termination flag for the equity calculation only. Document the rationale in the working papers and reference this email thread. Do not change his Workday status.\n\nMelissa",
+          "source": "email",
+          "occurred_at": "2026-01-29T16:55:00Z",
+          "task_id": "T04",
+          "sender": "Melissa Carter",
+          "recipient": [
+            "Rachel Stein",
+            "Steven Price"
+          ],
+          "attachments": [
+            "Hoffstadt_Separation_Agreement_Redacted.pdf"
+          ]
+        }
+      },
+      {
+        "event_id": "e4",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Melissa,\n\nUnderstood. I will override the Shareworks flag, re-run the expensing report, and update the reconciliation file with a note pointing back to this thread and the agreement. Posting the reconciliation tomorrow morning. This will push the Q1 equity recon by about half a day, which I will flag separately to Steven for the payroll accrual JE timing.\n\nRachel",
+          "source": "email",
+          "occurred_at": "2026-01-29T17:30:00Z",
+          "task_id": "T04",
+          "sender": "Rachel Stein",
+          "recipient": [
+            "Melissa Carter",
+            "Steven Price"
+          ],
+          "attachments": []
+        }
+      },
+      {
+        "event_id": "e5",
+        "event_type": "create",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Steven,\n\nQuick heads up: the equity reconciliation is going to land mid-morning tomorrow (BD+3) instead of tonight, because of the Hoffstadt vesting issue I flagged Melissa on yesterday. We needed external reporting sign-off before I could finalize the SBC number, which I just got this morning.\n\nSince the payroll accrual JE depends on the equity recon being final, you will want to plan for posting the JE template to SharePoint by mid-afternoon BD+3 rather than the usual BD+3 morning slot. That still keeps Mei Lin within her BD+4 posting window, but it is tighter than I would like.\n\nIf you want me to pre-populate the wage and tax sections of the JE template now and just plug in the equity numbers tomorrow, I can do that. Let me know.\n\nRachel",
+          "source": "email",
+          "occurred_at": "2026-01-30T14:22:00Z",
+          "task_id": "T06",
+          "sender": "Rachel Stein",
+          "recipient": [
+            "Steven Price"
+          ],
+          "attachments": []
+        }
+      },
+      {
+        "event_id": "e6",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Rachel,\n\nYes, please pre-populate the wage and tax sections now. I would rather have the bulk of the template done and just drop in the equity numbers tomorrow than try to compress everything into a half day. Send it to me when ready and I will review the wage and tax portion this afternoon.\n\nGiving Mei Lin a heads up that the JE template will hit SharePoint slightly later than usual.\n\nSteven",
+          "source": "email",
+          "occurred_at": "2026-01-30T14:38:00Z",
+          "task_id": "T06",
+          "sender": "Steven Price",
+          "recipient": [
+            "Rachel Stein"
+          ],
+          "attachments": []
+        }
+      },
+      {
+        "event_id": "e7",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Steven,\n\nGood news - I was able to get further than expected this afternoon. The equity numbers from the Hoffstadt override came together more quickly once I had Andrew's ASC 718 confirmation in hand, so I went ahead and finished the full reconciliation rather than splitting it across two days.\n\nAttaching the completed Q1 equity reconciliation file.\n\nTotal SBC expense for Q1 lands at $4.62M, with the Hoffstadt true-up contributing $94,250 of that.\n\nRachel",
+          "source": "email",
+          "occurred_at": "2026-01-30T16:55:00Z",
+          "task_id": "T04",
+          "sender": "Rachel Stein",
+          "recipient": [
+            "Steven Price"
+          ],
+          "attachments": [
+            "Q1_2026_Equity_Reconciliation_FINAL.xlsx"
+          ]
+        }
+      },
+      {
+        "event_id": "e8",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Rachel,\n\nReviewed the file. Looks good - the Workday-to-Shareworks reconciliation ties out, the Hoffstadt override entries are clearly documented with the proper references, and the SBC summary by entity matches what I am expecting.\n\nGo ahead and save it to the shared drive when you are ready.\n\nSteven",
+          "source": "email",
+          "occurred_at": "2026-01-30T18:20:00Z",
+          "task_id": "T06",
+          "sender": "Steven Price",
+          "recipient": [
+            "Rachel Stein"
+          ],
+          "attachments": []
+        }
+      },
+      {
+        "event_id": "e9",
+        "event_type": "update",
+        "node_type": "evidence",
+        "fields": {
+          "content": "Steven, Melissa,\n\nFile uploaded to the Payroll shared drive at /payroll/close/Q1-2026/Q1_2026_Equity_Reconciliation_FINAL.xlsx. T04 completion criteria met.\n\nLooping Melissa in for visibility since this closes out the equity recon for the quarter. Supporting documentation (Hoffstadt separation agreement and ASC 718 treatment confirmation from Andrew Li) is in the same folder under the supporting-docs subfolder.\n\nSteven - all yours for the payroll accrual JE prep.\n\nRachel",
+          "source": "email",
+          "occurred_at": "2026-01-30T19:05:00Z",
+          "task_id": "T06",
+          "sender": "Rachel Stein",
+          "recipient": [
+            "Steven Price",
+            "Melissa Carter"
+          ],
+          "attachments": [
+            "Q1_2026_Equity_Reconciliation_FINAL.xlsx",
+            "Hoffstadt_Separation_Agreement_Redacted.pdf",
+            "ASC718_Treatment_Confirmation_Andrew_Li.pdf"
+          ]
+        }
+      }
+    ]
+  }
