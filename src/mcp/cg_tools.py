@@ -295,14 +295,16 @@ def register_cg_tools(server: FastMCP) -> None:
         except Exception as e:
             return fail("NEO4J_QUERY_FAILED", str(e))
         parts = []
-        if task["status"] != "blocked":
-            parts.append(f"Task is in status '{task['status']}', not blocked.")
+        status = task.get("status")
+        if status and status != "blocked":
+            parts.append(f"Task is in status '{status}', not blocked.")
         if upstream:
             parts.append(
                 "Upstream not complete: " + ", ".join(u["task_id"] for u in upstream)
             )
-        if "blocked_reason" in task["attributes"]:
-            parts.append(f"Reason: {task['attributes']['blocked_reason']}.")
+        attributes = task.get("attributes")
+        if isinstance(attributes, dict) and "blocked_reason" in attributes:
+            parts.append(f"Reason: {attributes['blocked_reason']}.")
         return ok(
             {
                 "task_id": task_id,

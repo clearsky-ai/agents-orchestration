@@ -112,7 +112,7 @@ def _export_graph_snapshot(output_path: Path) -> None:
             )
             tasks: list[dict[str, Any]] = []
             for record in task_records:
-                row = _node_props(record["t"])
+                row = {"task_id": record["t"]["task_id"]}
                 upstream = [
                     task_id
                     for task_id in record["upstream_dependencies"]
