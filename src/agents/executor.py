@@ -19,7 +19,7 @@ def _notify(text: str) -> None:
 
 
 EXECUTOR_TOOLS = [
-    "update_task_attribute",
+    "update_task_status",
 ]
 
 

@@ -42,7 +42,7 @@ CREATE TABLE activities (
 """)
 
 DEPENDENCIES = []
-ALLOWED_TASK_COLUMNS = ["name", "team", "status", "business_day", "owner", "description"]
+ALLOWED_TASK_STATUSES = ["ready", "in_progress", "complete", "blocked", "not_ready"]
 
 def rows(cur):
     return [dict(row) for row in cur.fetchall()]
@@ -127,19 +127,19 @@ def process_status():
 
 
 @server.tool(
-    name="update_task_attribute",
+    name="update_task_status",
     description=(
-        "Persist a single column update on one task by task_id. Allowed attributes: name, team, "
-        "status, business_day, owner, description. Commits immediately to the in-memory store."
+        "Persist a single column update on one task by task_id. Allowed status: ready, in_progress, complete, blocked, not_ready. "
+        "Commits immediately to the in-memory store."
     ),
 )
-def update_task_attribute(task_id: str, attribute: str, value):
-    """Update one attribute of one task."""
-    if attribute not in ALLOWED_TASK_COLUMNS:
-        raise ValueError(f"Invalid attribute: {attribute}")
-    db.execute(f"UPDATE tasks SET {attribute} = ? WHERE task_id = ?", (value, task_id))
+def update_task_status(task_id: str, status: str):
+    """Update one status of one task."""
+    if status not in ALLOWED_TASK_STATUSES:
+        raise ValueError(f"Invalid status: {status}")
+    db.execute(f"UPDATE tasks SET status = ? WHERE task_id = ?", (status, task_id))
     db.commit()
-    return {"task_id": task_id, "attribute": attribute, "value": value}
+    return {"task_id": task_id, "status": status}
 
 
 if __name__ == "__main__":

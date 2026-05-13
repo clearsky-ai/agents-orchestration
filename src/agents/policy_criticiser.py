@@ -19,11 +19,11 @@ from src.common.llm.dspy import get_lm
 POLICIES: dict[str, dict[str, list[str]]] = {
     "task_transition_policy": {
         "ready_to_in_progress": [
-            # "Done by the owner",
+            # "make sure that the one of the owners are the ones that have the authority ",
             "upstream dependencies are done",
         ],
         "in_progress_to_complete": [
-            # "Done by the owner",
+            # "make sure that the one of the owners are the ones that have the authority ",
             "Task approval is received",
         ],
     },
