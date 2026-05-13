@@ -22,7 +22,7 @@
       },
       {
         "event_id": "e2",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Rachel,\n\nGood catch. I have a vague recollection of this one. Marcus negotiated continued vesting through a transition period as part of his exit, and the agreement was held by our outside counsel rather than going through the standard HR workflow. That is why Workday shows a clean termination - the system was never told about the carve-out.\n\nI have asked HR to pull the signed agreement from the legal hold folder. Expect it later today. In the meantime, do not post the reconciliation. We need the agreement in hand before we touch the SBC entry.\n\nMelissa",
@@ -39,7 +39,7 @@
       },
       {
         "event_id": "e3",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Rachel,\n\nHR sent the signed separation agreement (attached, redacted for confidentiality). Page 3, section 4.2: continued vesting through 6/30/2026 on both unvested grants, with quarterly tranche release on the original schedule. So the Shareworks forfeiture flag is wrong, and the correct treatment is to recognize SBC expense as if Marcus were still active through Q2.\n\nGo ahead and override the Shareworks termination flag for the equity calculation only. Document the rationale in the working papers and reference this email thread. Do not change his Workday status.\n\nMelissa",
@@ -58,7 +58,7 @@
       },
       {
         "event_id": "e4",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Melissa,\n\nUnderstood. I will override the Shareworks flag, re-run the expensing report, and update the reconciliation file with a note pointing back to this thread and the agreement. Posting the reconciliation tomorrow morning. This will push the Q1 equity recon by about half a day, which I will flag separately to Steven for the payroll accrual JE timing.\n\nRachel",
@@ -91,7 +91,7 @@
       },
       {
         "event_id": "e6",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Rachel,\n\nYes, please pre-populate the wage and tax sections now. I would rather have the bulk of the template done and just drop in the equity numbers tomorrow than try to compress everything into a half day. Send it to me when ready and I will review the wage and tax portion this afternoon.\n\nGiving Mei Lin a heads up that the JE template will hit SharePoint slightly later than usual.\n\nSteven",
@@ -107,7 +107,7 @@
       },
       {
         "event_id": "e7",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Steven,\n\nGood news - I was able to get further than expected this afternoon. The equity numbers from the Hoffstadt override came together more quickly once I had Andrew's ASC 718 confirmation in hand, so I went ahead and finished the full reconciliation rather than splitting it across two days.\n\nAttaching the completed Q1 equity reconciliation file.\n\nTotal SBC expense for Q1 lands at $4.62M, with the Hoffstadt true-up contributing $94,250 of that.\n\nRachel",
@@ -125,7 +125,7 @@
       },
       {
         "event_id": "e8",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Rachel,\n\nReviewed the file. Looks good - the Workday-to-Shareworks reconciliation ties out, the Hoffstadt override entries are clearly documented with the proper references, and the SBC summary by entity matches what I am expecting.\n\nGo ahead and save it to the shared drive when you are ready.\n\nSteven",
@@ -141,7 +141,7 @@
       },
       {
         "event_id": "e9",
-        "event_type": "update",
+        "event_type": "create",
         "node_type": "evidence",
         "fields": {
           "content": "Steven, Melissa,\n\nFile uploaded to the Payroll shared drive at /payroll/close/Q1-2026/Q1_2026_Equity_Reconciliation_FINAL.xlsx. T04 completion criteria met.\n\nLooping Melissa in for visibility since this closes out the equity recon for the quarter. Supporting documentation (Hoffstadt separation agreement and ASC 718 treatment confirmation from Andrew Li) is in the same folder under the supporting-docs subfolder.\n\nSteven - all yours for the payroll accrual JE prep.\n\nRachel",
