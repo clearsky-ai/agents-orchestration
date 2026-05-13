@@ -22,7 +22,7 @@ what is happening right now around the event you are given:
 - What is each task's status (complete / in_progress / blocked / not_ready / ready)?
 - What are the upstream and downstream dependencies, and are they satisfied?
 
-Always include the owner or assignee of the task in the response.
+Always include the owner of the task in the response.
 Use only the tools you have been given. Cite task IDs (T01, T02, ...) in your answer.
 Return a concise, structured finding."""
 
@@ -37,12 +37,22 @@ async def register_process_state_analyst(
     mcp_client = MCPClient()
     tools = await mcp_client.get_tools(include=PROCESS_STATE_ANALYST_TOOLS)
 
+    # Pull the live SQL schema once at registration and bake it into the
+    # system prompt so the LLM doesn't have to guess column names when
+    # drafting `run_sql_query` calls.
+    schema_text = await mcp_client.read_resource_text("schema://sql")
+    prompt = (
+        f"{SYSTEM_PROMPT}\n\n"
+        f"SQL schema (use these exact column names in run_sql_query):\n"
+        f"{schema_text}"
+    )
+
     agent = await AIAgent.register(
         runtime,
         type=agent_topic_type,
         factory=lambda: AIAgent(
             description=description,
-            system_message=SystemMessage(content=SYSTEM_PROMPT),
+            system_message=SystemMessage(content=prompt),
             model_client=model_client,
             tools=tools,
             agent_topic_type=agent_topic_type,

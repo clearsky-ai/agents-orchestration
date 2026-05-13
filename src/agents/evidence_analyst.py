@@ -22,7 +22,7 @@ Your job is to ground the event in the **evidence trail** of the related task(s)
 - If a task is blocked, use explain_blocker to surface the reason behind the block.
 - Cite evidence_id and decision_id values verbatim. Quote the relevant summary line.
 
-Always include the owner or assignee of the task in the response.
+Always include the owner of the task in the response.
 Be terse: facts + citations, not commentary."""
 
 
