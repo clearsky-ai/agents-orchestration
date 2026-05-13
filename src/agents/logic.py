@@ -94,6 +94,24 @@ def _render_proposed_actions(content: Any) -> str:
     return f"(unrecognized response shape: {content!r})"
 
 
+def _escalate_to_human(*, plan: str, failed: List[tuple[str, str]]) -> None:
+    """Surface a blocked plan to a human reviewer.
+
+    Today this is just a console box; later it becomes a real channel
+    (ticket queue, Slack, email, dashboard entry). The shape of the body —
+    plan plus the list of failed policies and reasons — is what a reviewer
+    needs to either approve, amend, or reject.
+    """
+    failed_lines = "\n".join(f"  - {p}: {reason}" for p, reason in failed)
+    body = (
+        f"A plan was proposed but failed one or more policy checks. "
+        f"Human review required.\n\n"
+        f"Plan:\n{plan}\n\n"
+        f"Failed policies:\n{failed_lines}"
+    )
+    console.final_answer_box("HumanEscalation :: review required", body)
+
+
 class LogicAgent(RoutedAgent):
     def __init__(
         self,
@@ -178,17 +196,19 @@ class LogicAgent(RoutedAgent):
         console.body(proposed_text)
 
         # No-action case: nothing to critique, no Yes/No routing to make.
+        # Treated as a successful pass through the pipeline — notify the user
+        # that the system looked at the event and decided no change was needed.
         if proposed_text.startswith("No action proposed"):
             console.final_answer_box(
-                "Logic :: decision (no action)", proposed_text
+                "Notification :: no action needed", proposed_text
             )
             return
 
-        # Single-shot policy critique. The LogicAgent does NOT execute or
-        # escalate yet — both branches terminate at the console until the
-        # ExecutionAgent and HumanEscalation paths are wired.
+        # Single-shot policy critique. The reasoning trace is discarded;
+        # we only act on the per-policy verdicts.
+        _reasoning, results = await critique(findings_text, proposed_text)
+
         console.section("Logic :: policy critique", color=console.cyan)
-        results = await critique(findings_text, proposed_text)
         for r in results:
             mark = "passed" if r.passed else "failed"
             console.kv(f"  {mark} {r.policy}", r.reason)
@@ -211,15 +231,10 @@ class LogicAgent(RoutedAgent):
                 topic_id=TopicId(self._executor_topic_type, source=self.id.key),
             )
         else:
-            failed = [r.policy for r in results if not r.passed]
-            decision_summary = (
-                "No — would route to HumanEscalation (not yet wired). "
-                f"Failed policies: {'; '.join(failed)}"
-            )
-            console.final_answer_box(
-                "Logic :: decision",
-                f"{proposed_text}\n\n{decision_summary}",
-            )
+            # No path: plan exists but at least one policy failed. Escalate
+            # to a human reviewer with the plan and the failed verdicts.
+            failed = [(r.policy, r.reason) for r in results if not r.passed]
+            _escalate_to_human(plan=proposed_text, failed=failed)
 
 
 async def register_logic_agent(

@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import Callable, List, Optional
 
 from autogen_core import (
     FunctionCall,
@@ -42,6 +42,7 @@ class AIAgent(RoutedAgent):
         tools: List[MCPToolWrapper],
         agent_topic_type: str,
         user_topic_type: str,
+        completion_callback: Optional[Callable[[str], None]] = None,
     ) -> None:
         super().__init__(description)
         self._system_message = system_message
@@ -50,6 +51,11 @@ class AIAgent(RoutedAgent):
         self._tool_schema = [tool.schema for tool in tools]
         self._agent_topic_type = agent_topic_type
         self._user_topic_type = user_topic_type
+        # Optional hook called with the agent's final reply text after the
+        # AgentResponse has been published. Used by the executor to feed its
+        # summary into the user-facing notification without coupling base.py
+        # to notification state.
+        self._completion_callback = completion_callback
 
     def _build_messages(self, message: AgentsTask) -> List[object]:
         """Prepend the system prompt to the task context."""
@@ -145,3 +151,9 @@ class AIAgent(RoutedAgent):
             ),
             topic_id=TopicId(self._user_topic_type, source=self.id.key),
         )
+        if self._completion_callback is not None:
+            try:
+                self._completion_callback(llm_result.content)
+            except Exception:
+                # Notification errors must never break the pipeline.
+                pass
