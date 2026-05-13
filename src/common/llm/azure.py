@@ -3,12 +3,14 @@ from typing import Literal, cast
 
 from dotenv import load_dotenv
 
+from src.common.llm._auth import async_token_provider, resolve_base_url
+
 load_dotenv()
 
 
 def get_azure_lm(cached: bool = True, overrides: dict = None):
     from autogen_ext.cache_store.redis import RedisStore
-    from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
+    from autogen_ext.models.openai import OpenAIChatCompletionClient
     from autogen_ext.models.cache import CHAT_CACHE_VALUE_TYPE, ChatCompletionCache
 
     cache_store = None
@@ -33,17 +35,10 @@ def get_azure_lm(cached: bool = True, overrides: dict = None):
         cache_store = RedisStore[CHAT_CACHE_VALUE_TYPE](redis_instance)
 
     return ChatCompletionCache(
-        AzureOpenAIChatCompletionClient(
-            azure_deployment=overrides.get("AZURE_MODEL", os.getenv("AZURE_MODEL")),
-            api_version=overrides.get(
-                "AZURE_API_VERSION",
-                os.getenv("AZURE_API_VERSION", "2024-12-01-preview"),
-            ),
-            azure_endpoint=overrides.get("AZURE_ENDPOINT", os.getenv("AZURE_ENDPOINT")),
-            api_key=overrides.get(
-                "AZURE_SUBSCRIPTION_KEY", os.getenv("AZURE_SUBSCRIPTION_KEY")
-            ),
+        OpenAIChatCompletionClient(
             model=overrides.get("AZURE_MODEL", os.getenv("AZURE_MODEL")),
+            base_url=resolve_base_url(overrides),
+            api_key=async_token_provider(),
             model_info={
                 "vision": overrides.get("IS_VISION_MODEL", False),
                 "function_calling": overrides.get("IS_FUNCTION_CALLING", True),
@@ -51,12 +46,12 @@ def get_azure_lm(cached: bool = True, overrides: dict = None):
                 "family": overrides.get("FAMILY", "unknown"),
                 "structured_output": overrides.get("IS_STRUCTURED_OUTPUT", True),
             },
-            # reasoning_effort=cast(
-            #     Literal["low", "medium", "high"] | None,
-            #     overrides.get(
-            #         "REASONING_EFFORT", os.getenv("REASONING_EFFORT", "medium")
-            #     ),
-            # ),
+            reasoning_effort=cast(
+                Literal["low", "medium", "high"] | None,
+                overrides.get(
+                    "REASONING_EFFORT", os.getenv("REASONING_EFFORT", "medium")
+                ),
+            ),
         ),
         cache_store,
     )

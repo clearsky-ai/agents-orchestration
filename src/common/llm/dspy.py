@@ -3,6 +3,8 @@ import os
 import dspy
 from dotenv import load_dotenv
 
+from src.common.llm._auth import resolve_azure_endpoint, sync_token_provider
+
 load_dotenv()
 
 dspy.configure_cache(enable_disk_cache=False)
@@ -27,7 +29,13 @@ def _azure_deployment_id(overrides: dict) -> str:
 
 
 def get_lm(overrides: dict | None = None) -> dspy.LM:
-    """DSPy language model pointing at Azure OpenAI (env-driven)."""
+    """DSPy language model pointing at Azure OpenAI.
+
+    Auth matches the autogen path in ``src/common/llm/azure.py``: Entra ID
+    bearer tokens via ``DefaultAzureCredential`` (``az login`` locally,
+    Managed/Workload Identity in cluster). Pass ``api_key`` in ``overrides``
+    only if you really want to fall back to a static subscription key.
+    """
     overrides = overrides or {}
     deployment = _azure_deployment_id(overrides)
     if not deployment:
@@ -38,12 +46,23 @@ def get_lm(overrides: dict | None = None) -> dspy.LM:
     model = overrides.get("model")
     if not model:
         model = deployment if deployment.startswith("azure/") else f"azure/{deployment}"
-    api_version = overrides.get("api_version") or os.getenv("AZURE_API_VERSION") or "2024-12-01-preview"
+    api_version = (
+        overrides.get("api_version") or os.getenv("AZURE_API_VERSION") or "2024-12-01-preview"
+    )
+    api_base = overrides.get("api_base") or resolve_azure_endpoint(overrides)
+
+    auth_kwargs: dict = {}
+    api_key = overrides.get("api_key")
+    if api_key:
+        auth_kwargs["api_key"] = api_key
+    else:
+        auth_kwargs["azure_ad_token_provider"] = sync_token_provider()
+
     return dspy.LM(
         model=model,
-        api_key=overrides.get("api_key", os.getenv("AZURE_SUBSCRIPTION_KEY")),
-        api_base=overrides.get("api_base", os.getenv("AZURE_ENDPOINT")),
+        api_base=api_base,
         api_version=api_version,
         provider=overrides.get("provider", "azure"),
         cache=overrides.get("cache", False),
+        **auth_kwargs,
     )

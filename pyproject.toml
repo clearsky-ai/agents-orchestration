@@ -3,10 +3,12 @@ line-length = 100
 
 [dependency-groups]
 dev = [
+    "azure-identity>=1.17.0",
+    "certifi>=2024.0.0",
     "db-sqlite3>=0.0.1",
     "mcp>=1.27.1",
     "autogen-core>=0.4.0",
-    "autogen-ext[mcp]>=0.4.0",
+    "autogen-ext[mcp,redis]>=0.4.0",
     "dspy-ai>=2.4.0",
     "mcp>=1.8.0",
     "neo4j>=5.23.0,<6",
