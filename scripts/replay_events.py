@@ -32,6 +32,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 load_dotenv(REPO_ROOT / ".env")
+DEFAULT_OUTPUT = REPO_ROOT / "src" / "data" / "mock_data.replayed.json"
 
 
 def _capture_cg_tools() -> dict[str, Any]:
@@ -52,7 +53,7 @@ def _capture_cg_tools() -> dict[str, Any]:
     return captured
 
 
-def _verify_neo4j_configured() -> None:
+def _open_neo4j_driver() -> Any:
     if not os.environ.get("NEO4J_PASSWORD"):
         print(
             "replay_events: NEO4J_PASSWORD is not set. Graph writes require Neo4j.\n"
@@ -67,7 +68,11 @@ def _verify_neo4j_configured() -> None:
     uri = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
     user = os.environ.get("NEO4J_USER", "neo4j")
     password = os.environ["NEO4J_PASSWORD"]
-    driver = GraphDatabase.driver(uri, auth=(user, password))
+    return GraphDatabase.driver(uri, auth=(user, password))
+
+
+def _verify_neo4j_configured() -> None:
+    driver = _open_neo4j_driver()
     try:
         driver.verify_connectivity()
     except Exception as exc:
@@ -75,6 +80,90 @@ def _verify_neo4j_configured() -> None:
         sys.exit(1)
     finally:
         driver.close()
+
+
+def _decode_json_property(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    stripped = value.strip()
+    if not stripped or stripped[0] not in "[{":
+        return value
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        return value
+
+
+def _node_props(node: Any) -> dict[str, Any]:
+    return {key: _decode_json_property(value) for key, value in dict(node).items()}
+
+
+def _export_graph_snapshot(output_path: Path) -> None:
+    driver = _open_neo4j_driver()
+    try:
+        with driver.session() as session:
+            task_records = session.run(
+                """
+                MATCH (t:Task)
+                OPTIONAL MATCH (t)-[:DEPENDS_ON]->(upstream:Task)
+                RETURN t, collect(upstream.task_id) AS upstream_dependencies
+                ORDER BY t.task_id
+                """
+            )
+            tasks: list[dict[str, Any]] = []
+            for record in task_records:
+                row = _node_props(record["t"])
+                upstream = [
+                    task_id
+                    for task_id in record["upstream_dependencies"]
+                    if isinstance(task_id, str)
+                ]
+                row["upstream_dependencies"] = sorted(upstream)
+                tasks.append(row)
+
+            evidence_records = session.run(
+                """
+                MATCH (e:Evidence)
+                OPTIONAL MATCH (e)-[:FOR_TASK]->(t:Task)
+                RETURN e, t.task_id AS task_id
+                ORDER BY coalesce(e.occurred_at, ""), coalesce(e.evidence_id, "")
+                """
+            )
+            evidence: list[dict[str, Any]] = []
+            for record in evidence_records:
+                row = _node_props(record["e"])
+                linked_task_id = record["task_id"]
+                row["task_id"] = linked_task_id or row.get("task_id", "")
+                evidence.append(row)
+
+            decision_records = session.run(
+                """
+                MATCH (d:Decision)
+                OPTIONAL MATCH (d)-[:FOR_TASK]->(t:Task)
+                RETURN d, t.task_id AS task_id
+                ORDER BY coalesce(d.decided_at, ""), coalesce(d.decision_id, "")
+                """
+            )
+            decisions: list[dict[str, Any]] = []
+            for record in decision_records:
+                row = _node_props(record["d"])
+                linked_task_id = record["task_id"]
+                row["task_id"] = linked_task_id or row.get("task_id", "")
+                decisions.append(row)
+    finally:
+        driver.close()
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(
+            {"tasks": tasks, "evidence": evidence, "decisions": decisions},
+            indent=2,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"\nReplay snapshot written to {output_path}")
 
 
 def _normalize_node_type(raw: str) -> str:
@@ -140,7 +229,7 @@ def _apply_event_to_graph(event: dict[str, Any], tools: dict[str, Any]) -> None:
     sys.exit(1)
 
 
-async def _replay_all(events_path: Path) -> None:
+async def _replay_all(events_path: Path, output_path: Path) -> None:
     payload = json.loads(events_path.read_text(encoding="utf-8"))
     raw_events = payload.get("events")
     if not isinstance(raw_events, list):
@@ -170,6 +259,8 @@ async def _replay_all(events_path: Path) -> None:
     finally:
         await azure_llm.close()
 
+    _export_graph_snapshot(output_path)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -179,12 +270,18 @@ def main() -> None:
         required=True,
         help="Path to events JSON (top-level key 'events': array of objects)",
     )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=DEFAULT_OUTPUT,
+        help=f"Path for the replayed graph JSON snapshot (default: {DEFAULT_OUTPUT})",
+    )
     args = parser.parse_args()
     path = args.events
     if not path.is_file():
         print(f"replay_events: not a file: {path}", file=sys.stderr)
         sys.exit(1)
-    asyncio.run(_replay_all(path.resolve()))
+    asyncio.run(_replay_all(path.resolve(), args.output.resolve()))
 
 
 if __name__ == "__main__":
