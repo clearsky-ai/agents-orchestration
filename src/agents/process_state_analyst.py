@@ -22,6 +22,7 @@ what is happening right now around the event you are given:
 - What is each task's status (complete / in_progress / blocked / not_ready / ready)?
 - What are the upstream and downstream dependencies, and are they satisfied?
 
+Always include the owner or assignee of the task in the response.
 Use only the tools you have been given. Cite task IDs (T01, T02, ...) in your answer.
 Return a concise, structured finding."""
 
