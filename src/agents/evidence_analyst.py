@@ -5,6 +5,7 @@ from autogen_core import SingleThreadedAgentRuntime, TypeSubscription, models
 from autogen_core.models import SystemMessage
 
 from src.agents.base import AIAgent
+from src.agents.prompts import get_prompt_manager
 from src.mcp.client import MCPClient
 
 EVIDENCE_ANALYST_TOOLS = [
@@ -12,18 +13,6 @@ EVIDENCE_ANALYST_TOOLS = [
     "find_similar_decisions",
     "explain_blocker",
 ]
-
-SYSTEM_PROMPT = """You are the EvidenceAnalyst.
-
-Your job is to ground the event in the **evidence trail** of the related task(s):
-- Pull recent evidence rows (emails, slack notes, observations) with get_evidence_trace.
-- Check for prior decisions on the same task with find_similar_decisions (precedents,
-  manual overrides, variance tolerances).
-- If a task is blocked, use explain_blocker to surface the reason behind the block.
-- Cite evidence_id and decision_id values verbatim. Quote the relevant summary line.
-
-Always include the owner of the task in the response.
-Be terse: facts + citations, not commentary."""
 
 
 async def register_evidence_analyst(
@@ -36,12 +25,21 @@ async def register_evidence_analyst(
     mcp_client = MCPClient()
     tools = await mcp_client.get_tools(include=EVIDENCE_ANALYST_TOOLS)
 
+    # Fetch system_message + contract from the YAML registry. Contract goes
+    # LAST so it's the freshest thing the LLM saw before generating output.
+    p = get_prompt_manager().get("evidence_analyst")
+    prompt = (
+        f"{p.system_message}\n\n"
+        f"# Contract — self-check your output before returning\n"
+        f"{p.contract}"
+    )
+
     agent = await AIAgent.register(
         runtime,
         type=agent_topic_type,
         factory=lambda: AIAgent(
             description=description,
-            system_message=SystemMessage(content=SYSTEM_PROMPT),
+            system_message=SystemMessage(content=prompt),
             model_client=model_client,
             tools=tools,
             agent_topic_type=agent_topic_type,

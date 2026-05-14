@@ -17,41 +17,9 @@ from autogen_core.models import (
 )
 
 from src.agents.policy_criticiser import critique
+from src.agents.prompts import get_prompt_manager
 from src.common import console
 from src.primitives.contracts import AgentResponse, AgentsTask, EventSources
-
-
-LOGIC_SYSTEM_PROMPT = """You are the LogicAgent.
-
-You receive findings from three specialist analysts about a single event:
-- ProcessStateAnalyst — task statuses and dependency edges.
-- EvidenceAnalyst — communication trail, prior decisions, and reasons a task is blocked.
-- ContextResearchAgent — broader graph context and historical precedents.
-
-These findings are complementary: each analyst contributes a distinct slice of
-the picture, and you should combine them rather than treat them as competing or
-redundant sources.
-
-Your job is to plan what action (if any) the system should take in response
-to the event. You are a planner — describe what needs to happen. A downstream
-ExecutorAgent will perform the tasks you assign to it.
-
-SCHEMA (use these names and values verbatim in your plan):
-- Task fields (writable): name, team, status, business_day, owner, description.
-  Task status values: ready | in_progress | complete | blocked | not_ready.
-
-For each task you propose, be explicit about the details:
-- the task_id it applies to (verbatim from the findings)
-- the field/attribute name
-- the new value
-- Any constraints or conditions that must be met
-
-The Executor does NOT re-check preconditions, so every step you propose must
-be grounded in the findings right now. Do not assume future events, and do
-not treat approval/drafting of an action as proof it has happened. 
-
-If no action is warranted, begin your response with the exact phrase
-"No action proposed." followed by a brief explanation."""
 
 
 def _extract_text(items: Any) -> str:
@@ -106,11 +74,15 @@ class LogicAgent(RoutedAgent):
         executor_topic_type: str,
         expected_sources: Set[str],
         model_client: ChatCompletionClient,
+        system_prompt: str,
     ) -> None:
         super().__init__(logic_topic_type)
         self._executor_topic_type = executor_topic_type
         self._expected_sources = set(expected_sources)
         self._model_client = model_client
+        # Combined system_message + contract fetched from the YAML registry
+        # at registration time; used on every decision call.
+        self._system_prompt = system_prompt
         # Single-threaded runtime + one event at a time => a bare dict is fine.
         # When events become concurrent this needs to be keyed by event_id.
         self._pending: Optional[Dict[str, str]] = None
@@ -165,7 +137,7 @@ class LogicAgent(RoutedAgent):
 
         llm_result = await self._model_client.create(
             messages=[
-                SystemMessage(content=LOGIC_SYSTEM_PROMPT),
+                SystemMessage(content=self._system_prompt),
                 UserMessage(
                     content=(
                         "Three specialists have replied. Their findings:\n\n"
@@ -231,6 +203,15 @@ async def register_logic_agent(
     expected_sources: Set[str],
     model_client: ChatCompletionClient,
 ) -> LogicAgent:
+    # Fetch system_message + contract from the YAML registry. Contract goes
+    # LAST so it's the freshest thing the LLM saw before generating output.
+    p = get_prompt_manager().get("logic")
+    system_prompt = (
+        f"{p.system_message}\n\n"
+        f"# Contract — self-check your output before returning\n"
+        f"{p.contract}"
+    )
+
     agent = await LogicAgent.register(
         runtime,
         type=agent_topic_type,
@@ -239,6 +220,7 @@ async def register_logic_agent(
             executor_topic_type=executor_topic_type,
             expected_sources=expected_sources,
             model_client=model_client,
+            system_prompt=system_prompt,
         ),
     )
     await runtime.add_subscription(

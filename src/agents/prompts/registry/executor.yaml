@@ -54,7 +54,7 @@ executor:
         the summary, add it (even if to record that you did not call it).
 
       metadata:
-        author: "@team"
-        created: "2026-05-13"
+        author: "@cs-ai-hesham-elithy"
+        created: "2026-05-14"
         changelog: "Initial extraction from executor.py"
         tags: ["executor", "write"]

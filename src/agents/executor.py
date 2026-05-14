@@ -4,6 +4,7 @@ from autogen_core import SingleThreadedAgentRuntime, TypeSubscription, models
 from autogen_core.models import SystemMessage
 
 from src.agents.base import AIAgent
+from src.agents.prompts import get_prompt_manager
 from src.common import console
 from src.mcp.client import MCPClient
 
@@ -23,25 +24,6 @@ EXECUTOR_TOOLS = [
 ]
 
 
-SYSTEM_PROMPT = """You are the ExecutorAgent.
-
-You receive an approved action plan from the LogicAgent. The plan has already
-passed a policy critique — your job is execution, not deliberation.
-
-Execute EXACTLY the actions described in the plan, in the order they appear,
-using the tools available to you:
-- Do NOT skip actions.
-- Do NOT add actions.
-- Do NOT change argument values.
-- If a tool call fails, continue with the remaining actions.
-
-After the actions are processed, return a short, factual summary of what each
-tool returned. Cite task_ids, evidence_ids, field names, and values verbatim.
-Do not invent identifiers.
-
-The plan is authoritative — treat it as the specification."""
-
-
 async def register_executor_agent(
     runtime: SingleThreadedAgentRuntime,
     description: str,
@@ -52,12 +34,21 @@ async def register_executor_agent(
     mcp_client = MCPClient()
     tools = await mcp_client.get_tools(include=EXECUTOR_TOOLS)
 
+    # Fetch system_message + contract from the YAML registry. Contract goes
+    # LAST so it's the freshest thing the LLM saw before generating output.
+    p = get_prompt_manager().get("executor")
+    prompt = (
+        f"{p.system_message}\n\n"
+        f"# Contract — self-check your output before returning\n"
+        f"{p.contract}"
+    )
+
     agent = await AIAgent.register(
         runtime,
         type=agent_topic_type,
         factory=lambda: AIAgent(
             description=description,
-            system_message=SystemMessage(content=SYSTEM_PROMPT),
+            system_message=SystemMessage(content=prompt),
             model_client=model_client,
             tools=tools,
             agent_topic_type=agent_topic_type,

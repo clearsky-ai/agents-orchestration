@@ -39,7 +39,7 @@ context_research_agent:
         must be visible in your reasoning.
 
       metadata:
-        author: "@team"
-        created: "2026-05-13"
+        author: "@cs-ai-hesham-elithy"
+        created: "2026-05-14"
         changelog: "Initial extraction from context_research_agent.py"
         tags: ["analyst", "context_graph"]

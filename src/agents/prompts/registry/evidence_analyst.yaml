@@ -35,7 +35,7 @@ evidence_analyst:
         replace it.
 
       metadata:
-        author: "@team"
-        created: "2026-05-13"
+        author: "@cs-ai-hesham-elithy"
+        created: "2026-05-14"
         changelog: "Initial extraction from evidence_analyst.py"
         tags: ["analyst", "evidence"]
