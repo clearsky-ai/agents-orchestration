@@ -9,12 +9,11 @@ import yaml
 
 @dataclass
 class Prompt:
-    """The two pieces an agent fetches at startup."""
+    """The system_message an agent fetches at startup."""
 
     name: str
     version: str
     system_message: str
-    contract: str
 
 
 class PromptManager:
@@ -23,7 +22,7 @@ class PromptManager:
     Reads all ``*.yaml`` files under ``registry_path`` once on first use and
     merges their top-level keys into a single name -> entry map. Each entry
     must have ``default_version`` and a ``versions`` dict with at least one
-    version containing ``system_message`` and ``contract``.
+    version containing ``system_message``.
     """
 
     def __init__(self, registry_path: Optional[Path] = None) -> None:
@@ -77,14 +76,11 @@ class PromptManager:
             raise ValueError(
                 f"Missing 'system_message' in {name} v{version}"
             )
-        if "contract" not in v:
-            raise ValueError(f"Missing 'contract' in {name} v{version}")
 
         return Prompt(
             name=name,
             version=version,
             system_message=v["system_message"],
-            contract=v["contract"],
         )
 
     def reload(self) -> None:

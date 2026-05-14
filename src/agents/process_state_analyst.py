@@ -31,15 +31,13 @@ async def register_process_state_analyst(
     # drafting `run_sql_query` calls.
     schema_text = await mcp_client.read_resource_text("schema://sql")
 
-    # Fetch system_message + contract from the YAML registry. Contract goes
-    # LAST so it's the freshest thing the LLM saw before generating output.
+    # Fetch the system_message from the YAML registry. Contracts are handled
+    # separately via a Pydantic model and are not part of the system prompt.
     p = get_prompt_manager().get("process_state_analyst")
     prompt = (
         f"{p.system_message}\n\n"
         f"SQL schema (use these exact column names in run_sql_query):\n"
-        f"{schema_text}\n\n"
-        f"# Contract — self-check your output before returning\n"
-        f"{p.contract}"
+        f"{schema_text}"
     )
 
     agent = await AIAgent.register(

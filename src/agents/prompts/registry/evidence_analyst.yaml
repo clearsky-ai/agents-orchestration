@@ -15,25 +15,6 @@ evidence_analyst:
 
         Be terse: facts + citations, not commentary.
 
-      contract: |
-        Your reply MUST include:
-        - every evidence_id you reference (verbatim, exactly as returned by the tool).
-        - every decision_id you reference (verbatim).
-        - a short quoted excerpt for each cited evidence row (the relevant summary line).
-        - explicit "no blocker" / "blocked because ..." statement when explain_blocker
-          was relevant for any task in the event.
-
-        Your reply MUST NOT:
-        - invent or paraphrase evidence_id / decision_id values.
-        - summarise an evidence row without quoting the relevant line.
-        - propose actions, decisions, or task status changes — that is the LogicAgent's job.
-        - duplicate the ProcessStateAnalyst's status breakdown or the
-          ContextResearchAgent's blast-radius assessment.
-
-        Self-check before returning: every identifier must be present in the tool
-        results above. If any id was paraphrased or fabricated, re-run the tool and
-        replace it.
-
       metadata:
         author: "@cs-ai-hesham-elithy"
         created: "2026-05-14"

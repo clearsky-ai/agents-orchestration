@@ -22,37 +22,6 @@ executor:
 
         The plan is authoritative — treat it as the specification.
 
-      contract: |
-        Faithfulness rules — your tool calls MUST match the plan:
-        - One tool call per action in the plan, in the same order the plan lists them.
-        - Tool name comes from the plan; do not substitute (e.g. update_task_status
-          is not update_task_field).
-        - Argument values come from the plan verbatim; do not coerce, paraphrase,
-          or pick "more sensible" values.
-        - If the plan mentions a task_id / evidence_id / decision_id, pass it through
-          unchanged.
-
-        Failure handling:
-        - If a tool call returns an error or {"ok": false, ...}, log the error in
-          your summary and continue with the next action.
-        - Do not retry the failed call.
-        - Do not abort the remaining actions because one failed.
-
-        Your summary MUST include:
-        - one line per action describing what was called and what came back
-          (cite task_ids, fields, values verbatim).
-        - explicit "failed:" markers for any action that did not return ok.
-
-        Your summary MUST NOT:
-        - claim an action succeeded if the tool returned an error.
-        - invent task_ids, evidence_ids, or values not present in the plan or in
-          the tool results.
-        - propose follow-up actions or speculate about what should happen next.
-
-        Self-check before returning: every action in the plan has exactly one
-        corresponding line in your summary. If any plan action is missing from
-        the summary, add it (even if to record that you did not call it).
-
       metadata:
         author: "@cs-ai-hesham-elithy"
         created: "2026-05-14"

@@ -203,14 +203,9 @@ async def register_logic_agent(
     expected_sources: Set[str],
     model_client: ChatCompletionClient,
 ) -> LogicAgent:
-    # Fetch system_message + contract from the YAML registry. Contract goes
-    # LAST so it's the freshest thing the LLM saw before generating output.
+    # Fetch the system_message from the YAML registry. Contracts are handled
+    # separately via a Pydantic model and are not part of the system prompt.
     p = get_prompt_manager().get("logic")
-    system_prompt = (
-        f"{p.system_message}\n\n"
-        f"# Contract — self-check your output before returning\n"
-        f"{p.contract}"
-    )
 
     agent = await LogicAgent.register(
         runtime,
@@ -220,7 +215,7 @@ async def register_logic_agent(
             executor_topic_type=executor_topic_type,
             expected_sources=expected_sources,
             model_client=model_client,
-            system_prompt=system_prompt,
+            system_prompt=p.system_message,
         ),
     )
     await runtime.add_subscription(

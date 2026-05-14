@@ -25,21 +25,16 @@ async def register_context_research_agent(
     mcp_client = MCPClient()
     tools = await mcp_client.get_tools(include=CONTEXT_RESEARCH_TOOLS)
 
-    # Fetch system_message + contract from the YAML registry. Contract goes
-    # LAST so it's the freshest thing the LLM saw before generating output.
+    # Fetch the system_message from the YAML registry. Contracts are handled
+    # separately via a Pydantic model and are not part of the system prompt.
     p = get_prompt_manager().get("context_research_agent")
-    prompt = (
-        f"{p.system_message}\n\n"
-        f"# Contract — self-check your output before returning\n"
-        f"{p.contract}"
-    )
 
     agent = await AIAgent.register(
         runtime,
         type=agent_topic_type,
         factory=lambda: AIAgent(
             description=description,
-            system_message=SystemMessage(content=prompt),
+            system_message=SystemMessage(content=p.system_message),
             model_client=model_client,
             tools=tools,
             agent_topic_type=agent_topic_type,

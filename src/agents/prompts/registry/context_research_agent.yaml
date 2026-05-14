@@ -20,24 +20,6 @@ context_research_agent:
         Stay focused on graph-level context; do not duplicate the EvidenceAnalyst's quotes
         or the ProcessStateAnalyst's status breakdown.
 
-      contract: |
-        Your reply MUST include:
-        - the n-hop neighborhood you actually traversed (state the hop count you used).
-        - upstream prerequisites of the central task(s) (task_ids, verbatim).
-        - downstream dependents of the central task(s) (task_ids, verbatim).
-        - relevant historical decisions if any were returned (decision_ids, verbatim).
-        - an explicit blast-radius assessment naming which neighbors are at risk and why.
-
-        Your reply MUST NOT:
-        - invent task_ids or decision_ids that did not appear in tool results.
-        - re-state the per-task status breakdown (PSA covers that).
-        - re-quote evidence rows (EA covers that).
-        - propose actions or recommendations — that is the LogicAgent's job.
-
-        Self-check before returning: every task_id and decision_id you mention must trace
-        back to a tool result. If you used "validate_query" on a custom Cypher, that result
-        must be visible in your reasoning.
-
       metadata:
         author: "@cs-ai-hesham-elithy"
         created: "2026-05-14"
