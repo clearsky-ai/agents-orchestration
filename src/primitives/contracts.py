@@ -33,3 +33,4 @@ class AgentstopicTypes(Enum):
     # No agent subscribes — the message is dropped. Reserved as the
     # extension point for an audit / dashboard consumer later.
     EXECUTION_DONE = "execution.done"
+    

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from asyncio import InvalidStateError
 from typing import Any, Dict, List, Optional, Set
 
 from autogen_core import (
@@ -16,6 +17,7 @@ from autogen_core.models import (
     UserMessage,
 )
 
+from src.primitives.mission import ExecutionPlan
 from src.agents.policy_criticiser import critique
 from src.common import console
 from src.primitives.contracts import AgentResponse, AgentsTask, EventSources
@@ -33,7 +35,15 @@ redundant sources.
 
 Your job is to plan what action (if any) the system should take in response
 to the event. You are a planner — describe what needs to happen. A downstream
-ExecutionAgent will perform the tasks you assign to it.
+ExecutionAgent will perform the tasks you assign to it. 
+Actions are executed sequentially and in the order you propose.
+
+
+Actions:
+- No Action: use this if no action is warranted.
+- Send Notification: use this to notify the user about the event.
+- Human Escalation: use this if the action is too complex for the system to handle or you don't have the authority to take the action.
+- PMO Action: use this if the action is to update the database.
 
 SCHEMA (use these names and values verbatim in your plan):
 - Task fields (writable): name, team, status, business_day, owner, description.
@@ -44,13 +54,14 @@ For each task you propose, be explicit about the details:
 - the field/attribute name
 - the new value
 - Any constraints or conditions that must be met
+- Do not update descriptions, use notifications for any remarks you need to make.
+- Focus on task status updates if required
 
-The Execution does NOT re-check preconditions, so every step you propose must
-be grounded in the findings right now. Do not assume future events, and do
-not treat approval/drafting of an action as proof it has happened. 
+The ExecutionAgent does NOT re-check preconditions, so every step you propose must be grounded in the findings right now. 
+Do not assume future events, and do not treat approval/drafting of an action as proof it has happened. 
 
-If no action is warranted, begin your response with the exact phrase
-"No action proposed." followed by a brief explanation."""
+If no action is warranted, begin your response with the exact phrase "No action proposed." followed by a brief explanation
+"""
 
 
 def _extract_text(items: Any) -> str:
@@ -112,7 +123,7 @@ class LogicAgent(RoutedAgent):
         self._model_client = model_client
         # Single-threaded runtime + one event at a time => a bare dict is fine.
         # When events become concurrent this needs to be keyed by event_id.
-        self._pending: Optional[Dict[str, str]] = None
+        self._specialists_responses_buffer: Optional[Dict[str, str]] = None
 
     @message_handler
     async def handle_agent_response(
@@ -130,31 +141,34 @@ class LogicAgent(RoutedAgent):
             )
             return
 
-        if self._pending is None:
-            self._pending = {}
+        if self._specialists_responses_buffer is None:
+            self._specialists_responses_buffer = {}
 
         reply_text = _extract_text(message.context)
-        self._pending[source_agent] = reply_text
+        self._specialists_responses_buffer[source_agent] = reply_text
 
         console.section(f"Logic :: reply <- {source_agent}", color=console.yellow)
         console.body(reply_text)
         console.progress(
             "specialists in",
-            len(self._pending),
+            len(self._specialists_responses_buffer),
             len(self._expected_sources),
         )
 
-        if set(self._pending.keys()) < self._expected_sources:
+        if set(self._specialists_responses_buffer.keys()) < self._expected_sources:
             return  # still waiting for the rest
 
         await self._decide_and_propose(ctx)
 
     async def _decide_and_propose(self, ctx: MessageContext) -> None:
-        assert self._pending is not None
-        # Snapshot the findings and clear `_pending` up front so an exception
+        if self._specialists_responses_buffer is None:
+            raise InvalidStateError(
+                "LogicAgent is not in a valid state to decide and propose as it is still waiting for the responses from the specialists."
+            )
+        # Snapshot the findings and clear `_specialists_responses_buffer` up front so an exception
         # during the LLM call doesn't leave stale state behind.
-        responses = self._pending
-        self._pending = None
+        responses = self._specialists_responses_buffer
+        self._specialists_responses_buffer = None
 
         findings_text = "\n\n".join(
             f"### {agent}\n{reply}" for agent, reply in responses.items()
@@ -175,7 +189,22 @@ class LogicAgent(RoutedAgent):
                 ),
             ],
             cancellation_token=ctx.cancellation_token,
+            # Use json_output (not extra_create_args): ChatCompletionCache hashes
+            # extra_create_args with json.dumps, which cannot encode a model class.
+            json_output=ExecutionPlan,
         )
+
+        with open("plan.json", "w") as f:
+            import json
+
+            json.dump(
+                {
+                    "plan": json.loads(llm_result.content),
+                    "reasoning": llm_result.thought,
+                },
+                f,
+                indent=4,
+            )
 
         proposed_text = _render_proposed_actions(llm_result.content)
         console.section("Logic :: action plan", color=console.cyan)
