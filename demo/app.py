@@ -7,6 +7,7 @@ Pre-requisites (run once before opening the app):
     docker compose up -d
     PYTHONPATH=. python scripts/load_mock_neo4j.py --clear
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,11 +29,13 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from dotenv import load_dotenv
+
 load_dotenv(REPO_ROOT / ".env")
 
 st.set_page_config(page_title="Veltara Agent Demo", layout="wide", page_icon="🔄")
 
-st.markdown("""
+st.markdown(
+    """
 <style>
 /* Tighten default Streamlit element spacing */
 .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
@@ -41,7 +44,9 @@ st.markdown("""
 /* Give all bordered containers a cleaner look */
 [data-testid="stVerticalBlockBorderWrapper"] { border-color: #e2e8f0 !important; border-radius: 10px !important; }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 MOCK_DATA_PATH = REPO_ROOT / "src" / "data" / "mock_data.json"
 
@@ -66,12 +71,14 @@ ANALYST_LABELS = {
 }
 # ── Data loading ──────────────────────────────────────────────────────────────
 
+
 @st.cache_data
 def load_scenario(path: str) -> list[dict]:
     return json.loads(Path(path).read_text())["events"]
 
 
 # ── Streaming console capture ─────────────────────────────────────────────────
+
 
 class StreamingConsolePatch:
     """Redirects console.py calls into a thread-safe queue as they happen.
@@ -89,6 +96,7 @@ class StreamingConsolePatch:
 
     def __enter__(self) -> "StreamingConsolePatch":
         import src.common.console as mod
+
         self._mod = mod
         for fn in self._FNS:
             self._originals[fn] = getattr(mod, fn)
@@ -101,12 +109,15 @@ class StreamingConsolePatch:
 
     def _make_capturer(self, fn_name: str) -> Callable[..., None]:
         q = self._q
+
         def _fn(*args, **_kwargs) -> None:
             q.put({"fn": fn_name, "args": args})
+
         return _fn
 
 
 # ── Stage parser ──────────────────────────────────────────────────────────────
+
 
 def parse_pipeline_stages(events: list[dict]) -> dict:
     """Parse the flat captured console event list into named pipeline stages.
@@ -120,7 +131,7 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
         "analysts": {},
         "logic": {"plan": None, "policy_results": [], "deciding": False},
         "outcome": None,
-        "executor": {"tools": [], "summary": None, "started": False},
+        "execution": {"tools": [], "summary": None, "started": False},
     }
 
     state: str | None = None
@@ -145,9 +156,9 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
                     stages["analysts"].setdefault(
                         agent, {"tool_names": [], "findings": None, "started": True}
                     )
-                elif agent == "executor":
-                    state = "executor_task"
-                    stages["executor"]["started"] = True
+                elif agent == "execution":
+                    state = "execution_task"
+                    stages["execution"]["started"] = True
                 else:
                     state = None
 
@@ -155,8 +166,8 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
                 agent = title.split("::")[0].strip()
                 if agent in ANALYST_ORDER:
                     state = f"analyst_reply:{agent}"
-                elif agent == "executor":
-                    state = "executor_reply"
+                elif agent == "execution":
+                    state = "execution_reply"
                 else:
                     state = None
 
@@ -190,8 +201,8 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
             elif state == "logic_plan":
                 stages["logic"]["plan"] = (stages["logic"]["plan"] or "") + text
 
-            elif state == "executor_reply":
-                stages["executor"]["summary"] = text
+            elif state == "execution_reply":
+                stages["execution"]["summary"] = text
 
         elif fn == "kv":
             label = str(args[0]) if args else ""
@@ -200,7 +211,9 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
 
             if state and state.startswith("analyst_task:"):
                 agent = state.split(":")[1]
-                if "tool calls" in lower or ("llm-initial" in lower and "tool" in lower):
+                if "tool calls" in lower or (
+                    "llm-initial" in lower and "tool" in lower
+                ):
                     for t in value.split(","):
                         t = t.strip()
                         if t:
@@ -215,12 +228,14 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
                         {"policy": policy, "passed": passed, "reason": value}
                     )
 
-            elif state == "executor_task":
-                if "tool calls" in lower or ("llm-initial" in lower and "tool" in lower):
+            elif state == "execution_task":
+                if "tool calls" in lower or (
+                    "llm-initial" in lower and "tool" in lower
+                ):
                     for t in value.split(","):
                         t = t.strip()
                         if t:
-                            stages["executor"]["tools"].append(t)
+                            stages["execution"]["tools"].append(t)
 
         elif fn == "final_answer_box":
             title = str(args[0]) if args else ""
@@ -240,9 +255,11 @@ def parse_pipeline_stages(events: list[dict]) -> dict:
 
 # ── Graph helpers ─────────────────────────────────────────────────────────────
 
+
 def check_neo4j() -> bool:
     try:
         from neo4j import GraphDatabase
+
         driver = GraphDatabase.driver(
             os.environ.get("NEO4J_URI", "bolt://localhost:7687"),
             auth=(
@@ -260,6 +277,7 @@ def check_neo4j() -> bool:
 def reload_graph() -> tuple[bool, str]:
     try:
         from neo4j import GraphDatabase
+
         payload = json.loads(MOCK_DATA_PATH.read_text())
         tasks = payload.get("tasks") or []
         evidence = payload.get("evidence") or []
@@ -274,45 +292,70 @@ def reload_graph() -> tuple[bool, str]:
         )
         with driver.session() as s:
             s.execute_write(lambda tx: tx.run("MATCH (n) DETACH DELETE n"))
-            s.execute_write(lambda tx: [
-                tx.run("MERGE (t:Task {task_id: $tid}) SET t = {task_id: $tid}", tid=r["task_id"])
-                for r in tasks
-            ])
-            s.execute_write(lambda tx: [
-                tx.run(
-                    "MATCH (c:Task {task_id:$c}) MATCH (p:Task {task_id:$p}) MERGE (c)-[:DEPENDS_ON]->(p)",
-                    c=r["task_id"], p=up,
-                )
-                for r in tasks for up in (r.get("upstream_dependencies") or [])
-            ])
-            s.execute_write(lambda tx: [
-                tx.run(
-                    "MERGE (e:Evidence {evidence_id:$eid}) SET e += $props "
-                    "WITH e MATCH (t:Task {task_id:$tid}) MERGE (e)-[:FOR_TASK]->(t)",
-                    eid=r["evidence_id"],
-                    tid=r["task_id"],
-                    props={k: v for k, v in r.items() if k not in ("evidence_id", "task_id")},
-                )
-                for r in evidence
-            ])
-            s.execute_write(lambda tx: [
-                tx.run(
-                    "MERGE (d:Decision {decision_id:$did}) SET d += $props "
-                    "WITH d MATCH (t:Task {task_id:$tid}) MERGE (d)-[:FOR_TASK]->(t)",
-                    did=r["decision_id"],
-                    tid=r["task_id"],
-                    props={k: v for k, v in r.items() if k not in ("decision_id", "task_id")},
-                )
-                for r in decisions
-            ])
+            s.execute_write(
+                lambda tx: [
+                    tx.run(
+                        "MERGE (t:Task {task_id: $tid}) SET t = {task_id: $tid}",
+                        tid=r["task_id"],
+                    )
+                    for r in tasks
+                ]
+            )
+            s.execute_write(
+                lambda tx: [
+                    tx.run(
+                        "MATCH (c:Task {task_id:$c}) MATCH (p:Task {task_id:$p}) MERGE (c)-[:DEPENDS_ON]->(p)",
+                        c=r["task_id"],
+                        p=up,
+                    )
+                    for r in tasks
+                    for up in (r.get("upstream_dependencies") or [])
+                ]
+            )
+            s.execute_write(
+                lambda tx: [
+                    tx.run(
+                        "MERGE (e:Evidence {evidence_id:$eid}) SET e += $props "
+                        "WITH e MATCH (t:Task {task_id:$tid}) MERGE (e)-[:FOR_TASK]->(t)",
+                        eid=r["evidence_id"],
+                        tid=r["task_id"],
+                        props={
+                            k: v
+                            for k, v in r.items()
+                            if k not in ("evidence_id", "task_id")
+                        },
+                    )
+                    for r in evidence
+                ]
+            )
+            s.execute_write(
+                lambda tx: [
+                    tx.run(
+                        "MERGE (d:Decision {decision_id:$did}) SET d += $props "
+                        "WITH d MATCH (t:Task {task_id:$tid}) MERGE (d)-[:FOR_TASK]->(t)",
+                        did=r["decision_id"],
+                        tid=r["task_id"],
+                        props={
+                            k: v
+                            for k, v in r.items()
+                            if k not in ("decision_id", "task_id")
+                        },
+                    )
+                    for r in decisions
+                ]
+            )
         driver.close()
-        return True, f"Loaded {len(tasks)} tasks, {len(evidence)} evidence, {len(decisions)} decisions."
+        return (
+            True,
+            f"Loaded {len(tasks)} tasks, {len(evidence)} evidence, {len(decisions)} decisions.",
+        )
     except Exception as exc:
         return False, str(exc)
 
 
 def _capture_cg_tools() -> dict[str, Any]:
     from src.mcp.cg_tools import register_cg_tools
+
     server = MagicMock()
     captured: dict[str, Any] = {}
 
@@ -320,6 +363,7 @@ def _capture_cg_tools() -> dict[str, Any]:
         def _deco(fn):
             captured[fn.__name__] = fn
             return fn
+
         return _deco
 
     server.tool.side_effect = _tool
@@ -330,7 +374,9 @@ def _capture_cg_tools() -> dict[str, Any]:
 def apply_event_to_graph(event: dict) -> None:
     tools = _capture_cg_tools()
     node_type_raw = str(event.get("node_type", "")).strip().lower()
-    node_type = "Evidence" if node_type_raw == "evidence" else node_type_raw.capitalize()
+    node_type = (
+        "Evidence" if node_type_raw == "evidence" else node_type_raw.capitalize()
+    )
     fields = dict(event.get("fields") or {})
 
     if not fields.get("summary") and fields.get("content"):
@@ -345,7 +391,10 @@ def apply_event_to_graph(event: dict) -> None:
 
 # ── Streaming pipeline runner ─────────────────────────────────────────────────
 
-def start_pipeline_thread(event: dict) -> tuple[str | None, "queue.Queue[Any]", threading.Event, dict]:
+
+def start_pipeline_thread(
+    event: dict,
+) -> tuple[str | None, "queue.Queue[Any]", threading.Event, dict]:
     """Start the pipeline in a background thread. Returns (error, q, done, error_box).
 
     Non-blocking — the caller must drain the queue on each Streamlit rerun.
@@ -364,9 +413,11 @@ def start_pipeline_thread(event: dict) -> tuple[str | None, "queue.Queue[Any]", 
 
     def _thread() -> None:
         try:
+
             async def _pipeline() -> None:
                 from src.Runtime import run_pipeline_once
                 from src.common.llm.azure import get_azure_lm
+
                 lm = get_azure_lm()
                 try:
                     await run_pipeline_once(
@@ -390,12 +441,20 @@ def start_pipeline_thread(event: dict) -> tuple[str | None, "queue.Queue[Any]", 
 
 # ── Render helpers ────────────────────────────────────────────────────────────
 
+
 def _initials(name: str) -> str:
     parts = name.strip().split()
     return (parts[0][0] + parts[-1][0]).upper() if len(parts) >= 2 else name[:2].upper()
 
 
-def _email_html(sender: str, recipient: str | list, source: str, task_id: str, content: str, compact: bool = False) -> str:
+def _email_html(
+    sender: str,
+    recipient: str | list,
+    source: str,
+    task_id: str,
+    content: str,
+    compact: bool = False,
+) -> str:
     if isinstance(recipient, list):
         recipient = ", ".join(recipient)
     avatar = _initials(sender) if sender else "?"
@@ -404,8 +463,16 @@ def _email_html(sender: str, recipient: str | list, source: str, task_id: str, c
     font = "12px" if compact else "13.5px"
     avatar_size = "30px" if compact else "38px"
     avatar_font = "11px" if compact else "14px"
-    source_badge = f'<span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">{source}</span>' if source else ""
-    task_badge = f'<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">{task_id}</span>' if task_id else ""
+    source_badge = (
+        f'<span style="background:#ede9fe;color:#5b21b6;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">{source}</span>'
+        if source
+        else ""
+    )
+    task_badge = (
+        f'<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">{task_id}</span>'
+        if task_id
+        else ""
+    )
     return (
         '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.06)">'
         f'<div style="background:#f8fafc;padding:{pad};border-bottom:1px solid #e2e8f0">'
@@ -414,12 +481,12 @@ def _email_html(sender: str, recipient: str | list, source: str, task_id: str, c
         '<div style="flex:1;min-width:0">'
         f'<div style="font-weight:600;color:#111827;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{sender}</div>'
         f'<div style="color:#6b7280;font-size:11px;margin-top:1px">To: {recipient}</div>'
-        '</div>'
+        "</div>"
         f'<div style="display:flex;gap:5px;flex-shrink:0">{source_badge}{task_badge}</div>'
-        '</div>'
-        '</div>'
-        f'<div style="padding:{pad};font-size:{font};color:#374151;line-height:1.75;font-family:\'Georgia\',serif">{body_safe}</div>'
-        '</div>'
+        "</div>"
+        "</div>"
+        f"<div style=\"padding:{pad};font-size:{font};color:#374151;line-height:1.75;font-family:'Georgia',serif\">{body_safe}</div>"
+        "</div>"
     )
 
 
@@ -444,11 +511,13 @@ def render_pipeline_progress(stages: dict) -> None:
     """Compact one-line indicator of where we are in the pipeline."""
     orch_done = stages.get("orchestrator") is not None
     analysts = stages.get("analysts", {})
-    analysts_done = sum(1 for a in ANALYST_ORDER if (analysts.get(a) or {}).get("findings"))
+    analysts_done = sum(
+        1 for a in ANALYST_ORDER if (analysts.get(a) or {}).get("findings")
+    )
     logic = stages.get("logic", {})
     logic_done = bool(logic.get("plan")) or bool(logic.get("policy_results"))
     outcome = stages.get("outcome") or {}
-    # "Decided" only turns green when executor actually reports back, not just on routing
+    # "Decided" only turns green when execution actually reports back, not just on routing
     outcome_done = outcome.get("type") in ("execute", "escalate", "no_action")
 
     def chip(label: str, done: bool, active: bool) -> str:
@@ -460,12 +529,18 @@ def render_pipeline_progress(stages: dict) -> None:
 
     parts = [
         chip("Routed", orch_done, not orch_done),
-        chip(f"Analysts {analysts_done}/3", analysts_done == 3, orch_done and analysts_done < 3),
+        chip(
+            f"Analysts {analysts_done}/3",
+            analysts_done == 3,
+            orch_done and analysts_done < 3,
+        ),
         chip("Plan", logic_done, analysts_done == 3 and not logic_done),
         chip("Decided", outcome_done, logic_done and not outcome_done),
     ]
     st.markdown(
-        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px">' + "".join(parts) + "</div>",
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px">'
+        + "".join(parts)
+        + "</div>",
         unsafe_allow_html=True,
     )
 
@@ -476,7 +551,9 @@ def render_analysts(stages: dict, pipeline_done: bool = False) -> None:
 
     with st.container(border=True):
         st.markdown("##### 🔍 Analyst Findings")
-        st.caption("Three specialists gathered facts in parallel · click any to expand.")
+        st.caption(
+            "Three specialists gathered facts in parallel · click any to expand."
+        )
 
         for agent in ANALYST_ORDER:
             data = analysts.get(agent) or {}
@@ -493,14 +570,18 @@ def render_analysts(stages: dict, pipeline_done: bool = False) -> None:
                         st.caption(f"Tools called: {tools_str}")
                     st.markdown(findings)
             elif errored:
-                with st.expander(f"⚠️ &nbsp; {label} — timed out / no response", expanded=False):
+                with st.expander(
+                    f"⚠️ &nbsp; {label} — timed out / no response", expanded=False
+                ):
                     st.warning(
                         "This agent did not return findings — it likely timed out or hit a network error. "
                         "The pipeline continued with partial context.",
                         icon="⚠️",
                     )
             elif started:
-                st.markdown(f"⏳ &nbsp; **{label}** — _running..._", unsafe_allow_html=True)
+                st.markdown(
+                    f"⏳ &nbsp; **{label}** — _running..._", unsafe_allow_html=True
+                )
             else:
                 st.markdown(f"○ &nbsp; **{label}** — _pending_", unsafe_allow_html=True)
 
@@ -555,7 +636,7 @@ def render_policy(stages: dict) -> None:
 
         all_passed = all(p["passed"] for p in policies)
         if all_passed:
-            st.success("**All policies passed** — routing to ExecutorAgent", icon="✅")
+            st.success("**All policies passed** — routing to ExecutionAgent", icon="✅")
         else:
             st.error("**Policy failure** — escalating for human review", icon="⚠️")
 
@@ -564,12 +645,13 @@ def _looks_like_raw_json(text: str) -> bool:
     return "functions." in text and "returned {" in text
 
 
-def _parse_executor_changes(text: str) -> list[dict]:
-    """Extract structured changes from raw executor tool-return lines or markdown summaries."""
+def _parse_execution_changes(text: str) -> list[dict]:
+    """Extract structured changes from raw execution tool-return lines or markdown summaries."""
     import re
+
     changes = []
     # Pattern: functions.update_task_attribute returned {"task_id":..., "attribute":..., "value":...}
-    for m in re.finditer(r'functions\.\w+ returned (\{[^}]+\})', text or ""):
+    for m in re.finditer(r"functions\.\w+ returned (\{[^}]+\})", text or ""):
         try:
             obj = json.loads(m.group(1))
             if "task_id" in obj and "attribute" in obj:
@@ -582,26 +664,26 @@ def _parse_executor_changes(text: str) -> list[dict]:
 def render_outcome(stages: dict) -> None:
     """The final outcome — what actually happened."""
     outcome = stages.get("outcome")
-    executor = stages.get("executor") or {}
-    ex_started = executor.get("started", False)
+    execution = stages.get("execution") or {}
+    ex_started = execution.get("started", False)
 
     if not outcome:
         if ex_started:
             with st.container(border=True):
-                st.markdown("##### ⚡ Executor running...")
+                st.markdown("##### ⚡ Execution running...")
                 st.caption("Calling write tools to update the graph...")
         return
 
     otype = outcome.get("type", "")
     text = outcome.get("text", "")
-    ex_summary = executor.get("summary", "")
-    ex_tools = executor.get("tools", [])
+    ex_summary = execution.get("summary", "")
+    ex_tools = execution.get("tools", [])
 
     if otype == "execute":
-        # Executor has reported back — actually done
+        # Execution has reported back — actually done
         with st.container(border=True):
             st.markdown("##### ⚡ Execution Complete")
-            changes = _parse_executor_changes(ex_summary)
+            changes = _parse_execution_changes(ex_summary)
             if changes:
                 for c in changes:
                     task = c.get("task_id", "")
@@ -614,7 +696,7 @@ def render_outcome(stages: dict) -> None:
                         f'<span style="color:#374151;font-size:13px">{attr}</span>'
                         f'<span style="color:#94a3b8;font-size:12px">→</span>'
                         f'<span style="color:#111827;font-size:13px;font-weight:500">{val}</span>'
-                        f'</div>',
+                        f"</div>",
                         unsafe_allow_html=True,
                     )
             elif ex_summary and not _looks_like_raw_json(ex_summary):
@@ -623,10 +705,12 @@ def render_outcome(stages: dict) -> None:
                 st.success("Actions applied to graph.", icon="✅")
 
     elif otype == "routing":
-        # Logic routed to executor but executor hasn't reported back yet
+        # Logic routed to execution but execution hasn't reported back yet
         with st.container(border=True):
-            st.markdown("##### ⚡ Executor running...")
-            st.markdown("_Plan approved — executor is applying changes to the graph..._")
+            st.markdown("##### ⚡ Execution running...")
+            st.markdown(
+                "_Plan approved — execution is applying changes to the graph..._"
+            )
 
     elif otype == "escalate":
         with st.container(border=True):
@@ -651,13 +735,14 @@ def render_pipeline(event: dict, stages: dict, pipeline_done: bool = False) -> N
 
 # ── Session state ─────────────────────────────────────────────────────────────
 
+
 def _init() -> None:
     if "scenario" not in st.session_state:
         st.session_state.scenario = "scenario1"
     if "results" not in st.session_state:
-        st.session_state.results = {}      # scoped: {scenario_key: {eid: stages}}
+        st.session_state.results = {}  # scoped: {scenario_key: {eid: stages}}
     if "errors" not in st.session_state:
-        st.session_state.errors = {}       # scoped: {scenario_key: {eid: error}}
+        st.session_state.errors = {}  # scoped: {scenario_key: {eid: error}}
     if "selected" not in st.session_state:
         st.session_state.selected = None
     if "running" not in st.session_state:
@@ -792,7 +877,9 @@ with left:
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
     # Email preview for selected event
-    sel_ev = next((e for e in events if e.get("event_id") == st.session_state.selected), None)
+    sel_ev = next(
+        (e for e in events if e.get("event_id") == st.session_state.selected), None
+    )
     if sel_ev:
         st.divider()
         st.markdown("**Email**")

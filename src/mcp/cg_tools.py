@@ -135,12 +135,13 @@ def _fetch_incomplete_upstream(session: Any, task_id: str) -> list[dict[str, Any
         task_id=task_id,
     )
     return [
-        _normalize_neo4j_task_properties(dict(record["upstream"]))
-        for record in records
+        _normalize_neo4j_task_properties(dict(record["upstream"])) for record in records
     ]
 
 
-def _node_exists(session: Any, label: Literal["Evidence", "Decision"], node_id: str) -> bool:
+def _node_exists(
+    session: Any, label: Literal["Evidence", "Decision"], node_id: str
+) -> bool:
     id_prop = _ID_PROPERTY_BY_LABEL[label]
     quoted_label = _cypher_quoted_label(label)
     quoted_prop = _cypher_quoted_property(id_prop)
@@ -166,11 +167,7 @@ def _collect_graph_value(
         if "Task" in start.labels and "Task" in end.labels:
             downstream = start.get("task_id")
             upstream = end.get("task_id")
-            if (
-                downstream
-                and upstream
-                and (upstream, downstream) not in seen_depends
-            ):
+            if downstream and upstream and (upstream, downstream) not in seen_depends:
                 seen_depends.add((upstream, downstream))
                 edges.append({"upstream": upstream, "downstream": downstream})
         return
@@ -185,7 +182,9 @@ def _collect_graph_value(
             _collect_graph_value(x, tasks_map, edges, seen_depends)
 
 
-def _records_to_tasks_edges(records: list[Any]) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+def _records_to_tasks_edges(
+    records: list[Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
     tasks_map: dict[str, dict[str, Any]] = {}
     edges: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
@@ -498,7 +497,9 @@ def register_cg_tools(server: FastMCP) -> None:
                 if isinstance(task_id, str) and task_id.strip():
                     task = _fetch_task(session, task_id.strip())
                     if task is None:
-                        return fail("TASK_NOT_FOUND", f"task {task_id.strip()} not in graph")
+                        return fail(
+                            "TASK_NOT_FOUND", f"task {task_id.strip()} not in graph"
+                        )
                 session.execute_write(_create)
         except Exception as e:
             return fail("NEO4J_WRITE_FAILED", str(e))

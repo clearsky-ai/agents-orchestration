@@ -25,7 +25,6 @@ from autogen_core import (
 from src.common import console
 from src.primitives.contracts import AgentsTask
 
-
 ORCHESTRATOR_PREAMBLE = (
     "A new event has been routed to you. You are one of several specialist "
     "agents investigating it in parallel.\n\n"

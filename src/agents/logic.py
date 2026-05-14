@@ -20,7 +20,6 @@ from src.agents.policy_criticiser import critique
 from src.common import console
 from src.primitives.contracts import AgentResponse, AgentsTask, EventSources
 
-
 LOGIC_SYSTEM_PROMPT = """You are the LogicAgent.
 
 You receive findings from three specialist analysts about a single event:
@@ -34,7 +33,7 @@ redundant sources.
 
 Your job is to plan what action (if any) the system should take in response
 to the event. You are a planner — describe what needs to happen. A downstream
-ExecutorAgent will perform the tasks you assign to it.
+ExecutionAgent will perform the tasks you assign to it.
 
 SCHEMA (use these names and values verbatim in your plan):
 - Task fields (writable): name, team, status, business_day, owner, description.
@@ -46,7 +45,7 @@ For each task you propose, be explicit about the details:
 - the new value
 - Any constraints or conditions that must be met
 
-The Executor does NOT re-check preconditions, so every step you propose must
+The Execution does NOT re-check preconditions, so every step you propose must
 be grounded in the findings right now. Do not assume future events, and do
 not treat approval/drafting of an action as proof it has happened. 
 
@@ -103,12 +102,12 @@ class LogicAgent(RoutedAgent):
     def __init__(
         self,
         logic_topic_type: str,
-        executor_topic_type: str,
+        execution_topic_type: str,
         expected_sources: Set[str],
         model_client: ChatCompletionClient,
     ) -> None:
         super().__init__(logic_topic_type)
-        self._executor_topic_type = executor_topic_type
+        self._execution_topic_type = execution_topic_type
         self._expected_sources = set(expected_sources)
         self._model_client = model_client
         # Single-threaded runtime + one event at a time => a bare dict is fine.
@@ -186,9 +185,7 @@ class LogicAgent(RoutedAgent):
         # Treated as a successful pass through the pipeline — notify the user
         # that the system looked at the event and decided no change was needed.
         if proposed_text.startswith("No action proposed"):
-            console.final_answer_box(
-                "Notification :: no action needed", proposed_text
-            )
+            console.final_answer_box("Notification :: no action needed", proposed_text)
             return
 
         # Single-shot policy critique. The reasoning trace is discarded;
@@ -201,21 +198,21 @@ class LogicAgent(RoutedAgent):
             console.kv(f"  {mark} {r.policy}", r.reason)
 
         if all(r.passed for r in results):
-            decision_summary = "Yes — plan routed to ExecutorAgent."
+            decision_summary = "Yes — plan routed to ExecutionAgent."
             console.final_answer_box(
                 "Logic :: decision",
                 f"{proposed_text}\n\n{decision_summary}",
             )
-            # Publish AFTER rendering the box so the executor's output appears
+            # Publish AFTER rendering the box so the execution's output appears
             # below the box rather than interleaved with it. The plan flows
-            # as plain text in the AgentsTask context; the Executor's LLM
+            # as plain text in the AgentsTask context; the Execution's LLM
             # reads it and decides which write tools to invoke.
             await self.publish_message(
                 AgentsTask(
                     context=[proposed_text],
                     source=EventSources.AGENT,
                 ),
-                topic_id=TopicId(self._executor_topic_type, source=self.id.key),
+                topic_id=TopicId(self._execution_topic_type, source=self.id.key),
             )
         else:
             # No path: plan exists but at least one policy failed. Escalate
@@ -227,7 +224,7 @@ class LogicAgent(RoutedAgent):
 async def register_logic_agent(
     runtime: SingleThreadedAgentRuntime,
     agent_topic_type: str,
-    executor_topic_type: str,
+    execution_topic_type: str,
     expected_sources: Set[str],
     model_client: ChatCompletionClient,
 ) -> LogicAgent:
@@ -236,7 +233,7 @@ async def register_logic_agent(
         type=agent_topic_type,
         factory=lambda: LogicAgent(
             logic_topic_type=agent_topic_type,
-            executor_topic_type=executor_topic_type,
+            execution_topic_type=execution_topic_type,
             expected_sources=expected_sources,
             model_client=model_client,
         ),

@@ -73,10 +73,7 @@ def get_evidence_bundle_catalog() -> str:
         get_graph_schema_for_cypher()
         + divider
         + "Evidence trace — semantics & payloads (plain text; catalog above is shared with "
-        f"{TASK_CONTEXT_SCHEMA_URI})\n"
-        + "=" * 72
-        + "\n\n"
-        + EVIDENCE_TRACE_GUIDANCE
+        f"{TASK_CONTEXT_SCHEMA_URI})\n" + "=" * 72 + "\n\n" + EVIDENCE_TRACE_GUIDANCE
     )
 
 
