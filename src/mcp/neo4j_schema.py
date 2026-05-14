@@ -54,10 +54,13 @@ def _get_neo4j_driver() -> Any | None:
 
 def _introspect_schema(session: Any) -> str:
     lines: list[str] = []
-    lines.append("Neo4j graph schema (live introspection from the connected database):\n")
+    lines.append(
+        "Neo4j graph schema (live introspection from the connected database):\n"
+    )
 
     labels = sorted(
-        r["label"] for r in session.run("CALL db.labels() YIELD label RETURN label AS label")
+        r["label"]
+        for r in session.run("CALL db.labels() YIELD label RETURN label AS label")
     )
     lines.append("Node labels:")
     for lab in labels:
@@ -81,13 +84,11 @@ def _introspect_schema(session: Any) -> str:
     # Omit propertyTypes — Neo4j emits a procedure warning that its format will change next major.
     by_label: dict[str, set[str]] = defaultdict(set)
     try:
-        rows = session.run(
-            """
+        rows = session.run("""
             CALL db.schema.nodeTypeProperties()
             YIELD nodeLabels, propertyName
             RETURN nodeLabels, propertyName
-            """
-        )
+            """)
         for rec in rows:
             names = rec["nodeLabels"] or []
             pname = str(rec["propertyName"])
@@ -107,13 +108,11 @@ def _introspect_schema(session: Any) -> str:
 
     rel_props: dict[str, set[str]] = defaultdict(set)
     try:
-        rows = session.run(
-            """
+        rows = session.run("""
             CALL db.schema.relTypeProperties()
             YIELD relationshipType, propertyName
             RETURN relationshipType, propertyName
-            """
-        )
+            """)
         for rec in rows:
             rt = str(rec["relationshipType"])
             rel_props[rt].add(str(rec["propertyName"]))

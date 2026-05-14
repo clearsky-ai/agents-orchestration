@@ -9,21 +9,21 @@ from src.mcp.client import MCPClient
 
 
 def _notify(text: str) -> None:
-    """Emit a user-facing notification after the executor finishes.
+    """Emit a user-facing notification after the execution finishes.
 
-    Hooked into the executor via ``completion_callback`` on ``AIAgent``.
+    Hooked into the execution via ``completion_callback`` on ``AIAgent``.
     Swap the body for a real channel (Slack / email / UI / webhook) when
     ready; the call-site doesn't change.
     """
     console.final_answer_box("Notification :: action taken", text)
 
 
-EXECUTOR_TOOLS = [
+EXECUTION_TOOLS = [
     "update_task_status",
 ]
 
 
-SYSTEM_PROMPT = """You are the ExecutorAgent.
+SYSTEM_PROMPT = """You are the ExecutionAgent.
 
 You receive an approved action plan from the LogicAgent. The plan has already
 passed a policy critique — your job is execution, not deliberation.
@@ -42,7 +42,7 @@ Do not invent identifiers.
 The plan is authoritative — treat it as the specification."""
 
 
-async def register_executor_agent(
+async def register_execution_agent(
     runtime: SingleThreadedAgentRuntime,
     description: str,
     model_client: models.ChatCompletionClient,
@@ -50,7 +50,7 @@ async def register_executor_agent(
     user_topic_type: str,
 ) -> AIAgent:
     mcp_client = MCPClient()
-    tools = await mcp_client.get_tools(include=EXECUTOR_TOOLS)
+    tools = await mcp_client.get_tools(include=EXECUTION_TOOLS)
 
     agent = await AIAgent.register(
         runtime,
@@ -62,7 +62,7 @@ async def register_executor_agent(
             tools=tools,
             agent_topic_type=agent_topic_type,
             user_topic_type=user_topic_type,
-            # Feed the executor's final LLM summary into the user-facing
+            # Feed the execution's final LLM summary into the user-facing
             # notification (defined locally above). Other agents don't pass
             # a callback, so their replies don't pollute the notification.
             completion_callback=_notify,

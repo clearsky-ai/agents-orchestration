@@ -47,7 +47,9 @@ def get_lm(overrides: dict | None = None) -> dspy.LM:
     if not model:
         model = deployment if deployment.startswith("azure/") else f"azure/{deployment}"
     api_version = (
-        overrides.get("api_version") or os.getenv("AZURE_API_VERSION") or "2024-12-01-preview"
+        overrides.get("api_version")
+        or os.getenv("AZURE_API_VERSION")
+        or "2024-12-01-preview"
     )
     api_base = overrides.get("api_base") or resolve_azure_endpoint(overrides)
 

@@ -59,7 +59,7 @@ def _open_neo4j_driver() -> Any:
             "replay_events: NEO4J_PASSWORD is not set. Graph writes require Neo4j.\n"
             "Example: docker compose up -d && export NEO4J_PASSWORD=...\n"
             "Then load the graph: PYTHONPATH=. python scripts/load_mock_neo4j.py "
-            "--password \"$NEO4J_PASSWORD\" --data src/data/mock_data.json --clear",
+            '--password "$NEO4J_PASSWORD" --data src/data/mock_data.json --clear',
             file=sys.stderr,
         )
         sys.exit(1)
@@ -102,14 +102,12 @@ def _export_graph_snapshot(output_path: Path) -> None:
     driver = _open_neo4j_driver()
     try:
         with driver.session() as session:
-            task_records = session.run(
-                """
+            task_records = session.run("""
                 MATCH (t:Task)
                 OPTIONAL MATCH (t)-[:DEPENDS_ON]->(upstream:Task)
                 RETURN t, collect(upstream.task_id) AS upstream_dependencies
                 ORDER BY t.task_id
-                """
-            )
+                """)
             tasks: list[dict[str, Any]] = []
             for record in task_records:
                 row = {"task_id": record["t"]["task_id"]}
@@ -121,14 +119,12 @@ def _export_graph_snapshot(output_path: Path) -> None:
                 row["upstream_dependencies"] = sorted(upstream)
                 tasks.append(row)
 
-            evidence_records = session.run(
-                """
+            evidence_records = session.run("""
                 MATCH (e:Evidence)
                 OPTIONAL MATCH (e)-[:FOR_TASK]->(t:Task)
                 RETURN e, t.task_id AS task_id
                 ORDER BY coalesce(e.occurred_at, ""), coalesce(e.evidence_id, "")
-                """
-            )
+                """)
             evidence: list[dict[str, Any]] = []
             for record in evidence_records:
                 row = _node_props(record["e"])
@@ -136,14 +132,12 @@ def _export_graph_snapshot(output_path: Path) -> None:
                 row["task_id"] = linked_task_id or row.get("task_id", "")
                 evidence.append(row)
 
-            decision_records = session.run(
-                """
+            decision_records = session.run("""
                 MATCH (d:Decision)
                 OPTIONAL MATCH (d)-[:FOR_TASK]->(t:Task)
                 RETURN d, t.task_id AS task_id
                 ORDER BY coalesce(d.decided_at, ""), coalesce(d.decision_id, "")
-                """
-            )
+                """)
             decisions: list[dict[str, Any]] = []
             for record in decision_records:
                 row = _node_props(record["d"])

@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS activities (
 DEPENDENCIES = []
 ALLOWED_TASK_STATUSES = ["ready", "in_progress", "complete", "blocked", "not_ready"]
 
+
 def rows(cur):
     return [dict(row) for row in cur.fetchall()]
 
@@ -70,8 +71,15 @@ if db.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"] == 0:
         db.execute(
             "INSERT INTO tasks (task_id, name, team, status, business_day, owner, description) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (t["task_id"], t["name"], t["team"], t["status"],
-             t["business_day"], t["owner"], t["description"]),
+            (
+                t["task_id"],
+                t["name"],
+                t["team"],
+                t["status"],
+                t["business_day"],
+                t["owner"],
+                t["description"],
+            ),
         )
     db.commit()
 
@@ -129,9 +137,11 @@ def process_status():
     """Today's business day, % complete, and number of in-progress tasks."""
     total = db.execute("SELECT COUNT(*) AS n FROM tasks").fetchone()["n"]
     completed = db.execute(
-        "SELECT COUNT(*) AS n FROM tasks WHERE status = 'complete'").fetchone()["n"]
+        "SELECT COUNT(*) AS n FROM tasks WHERE status = 'complete'"
+    ).fetchone()["n"]
     in_progress = db.execute(
-        "SELECT COUNT(*) AS n FROM tasks WHERE status = 'in_progress'").fetchone()["n"]
+        "SELECT COUNT(*) AS n FROM tasks WHERE status = 'in_progress'"
+    ).fetchone()["n"]
     return {
         "current_business_day": CURRENT_BUSINESS_DAY,
         "percent_complete": round(completed / total * 100, 1) if total else 0,

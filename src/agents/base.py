@@ -52,7 +52,7 @@ class AIAgent(RoutedAgent):
         self._agent_topic_type = agent_topic_type
         self._user_topic_type = user_topic_type
         # Optional hook called with the agent's final reply text after the
-        # AgentResponse has been published. Used by the executor to feed its
+        # AgentResponse has been published. Used by the execution to feed its
         # summary into the user-facing notification without coupling base.py
         # to notification state.
         self._completion_callback = completion_callback
@@ -76,9 +76,11 @@ class AIAgent(RoutedAgent):
         if isinstance(llm_result.content, str):
             console.kv("llm-initial", llm_result.content)
         else:
-            tool_names = ", ".join(
-                getattr(c, "name", "?") for c in llm_result.content
-            ) if isinstance(llm_result.content, list) else str(llm_result.content)
+            tool_names = (
+                ", ".join(getattr(c, "name", "?") for c in llm_result.content)
+                if isinstance(llm_result.content, list)
+                else str(llm_result.content)
+            )
             console.kv("llm-initial (tool calls)", tool_names)
         # Process the LLM result.
         while isinstance(llm_result.content, list) and all(
@@ -128,9 +130,11 @@ class AIAgent(RoutedAgent):
                 if isinstance(llm_result.content, str):
                     console.kv(f"{self.id.type} llm-next", llm_result.content)
                 else:
-                    next_tools = ", ".join(
-                        getattr(c, "name", "?") for c in llm_result.content
-                    ) if isinstance(llm_result.content, list) else str(llm_result.content)
+                    next_tools = (
+                        ", ".join(getattr(c, "name", "?") for c in llm_result.content)
+                        if isinstance(llm_result.content, list)
+                        else str(llm_result.content)
+                    )
                     console.kv(f"{self.id.type} llm-next (tool calls)", next_tools)
             else:
                 # The task has been delegated, so we are done.

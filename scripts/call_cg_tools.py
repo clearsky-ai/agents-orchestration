@@ -134,7 +134,9 @@ def _current_task_link(node_type: str, node_id: str) -> str | None:
     return record["task_id"]
 
 
-def _restore_task_link(tools: dict[str, Any], node_type: str, node_id: str, task_id: str | None) -> None:
+def _restore_task_link(
+    tools: dict[str, Any], node_type: str, node_id: str, task_id: str | None
+) -> None:
     if task_id is None:
         return
     result = tools["link_to_task"](task_id, node_type, node_id)

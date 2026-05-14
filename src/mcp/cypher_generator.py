@@ -36,7 +36,9 @@ def _assert_readonly(query: str) -> None:
     scan = _cypher_for_write_scan(query)
     hit = _WRITE_PATTERN.search(scan)
     if hit:
-        raise ValueError(f"Generated query contains write keyword '{hit.group()}'; rejected.")
+        raise ValueError(
+            f"Generated query contains write keyword '{hit.group()}'; rejected."
+        )
 
 
 _HOPS_CAP = 30

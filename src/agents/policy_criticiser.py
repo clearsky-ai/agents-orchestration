@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from src.common.llm.dspy import get_lm
 
-
 # LM is configured per-call via dspy.context() to stay thread-safe.
 
 
