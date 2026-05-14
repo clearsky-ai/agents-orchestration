@@ -6,6 +6,7 @@ from autogen_core import SingleThreadedAgentRuntime, TypeSubscription, models
 from autogen_core.models import SystemMessage
 
 from src.agents.base import AIAgent
+from src.agents.prompts import get_prompt_manager
 from src.mcp.client import MCPClient
 
 PROCESS_STATE_ANALYST_TOOLS = [
@@ -13,18 +14,6 @@ PROCESS_STATE_ANALYST_TOOLS = [
     "run_sql_query",
     "get_task_dependencies",
 ]
-
-SYSTEM_PROMPT = """You are the ProcessStateAnalyst.
-
-Your job is to read the **current state of the quarter-close process** and report
-what is happening right now around the event you are given:
-- Which task(s) does the event touch?
-- What is each task's status (complete / in_progress / blocked / not_ready / ready)?
-- What are the upstream and downstream dependencies, and are they satisfied?
-
-Always include the owner of the task in the response.
-Use only the tools you have been given. Cite task IDs (T01, T02, ...) in your answer.
-Return a concise, structured finding."""
 
 
 async def register_process_state_analyst(
@@ -41,8 +30,12 @@ async def register_process_state_analyst(
     # system prompt so the LLM doesn't have to guess column names when
     # drafting `run_sql_query` calls.
     schema_text = await mcp_client.read_resource_text("schema://sql")
+
+    # Fetch the system_message from the YAML registry. Contracts are handled
+    # separately via a Pydantic model and are not part of the system prompt.
+    p = get_prompt_manager().get("process_state_analyst")
     prompt = (
-        f"{SYSTEM_PROMPT}\n\n"
+        f"{p.system_message}\n\n"
         f"SQL schema (use these exact column names in run_sql_query):\n"
         f"{schema_text}"
     )

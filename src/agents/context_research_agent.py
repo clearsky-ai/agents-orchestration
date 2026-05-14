@@ -5,6 +5,7 @@ from autogen_core import SingleThreadedAgentRuntime, TypeSubscription, models
 from autogen_core.models import SystemMessage
 
 from src.agents.base import AIAgent
+from src.agents.prompts import get_prompt_manager
 from src.mcp.client import MCPClient
 
 CONTEXT_RESEARCH_TOOLS = [
@@ -12,23 +13,6 @@ CONTEXT_RESEARCH_TOOLS = [
     "validate_query",
     "find_similar_decisions",
 ]
-
-SYSTEM_PROMPT = """You are the ContextResearchAgent.
-
-Your job is to **widen the lens**: given the email/signal and the central task(s) the
-orchestrator points you to, traverse the dependency graph and surface the broader context.
-- Call get_task_context with a sensible hops value (1-3) to retrieve the n-hop
-  neighborhood (upstream prerequisites AND downstream dependents).
-- Look for previously similar decisions (find_similar_decisions) that should bias
-  the recommendation (precedents, tolerances, manual overrides).
-- If the orchestrator's plan provides a custom Cypher snippet, validate it with
-  validate_query before trusting it.
-- Report: which neighboring tasks are at risk, which historical decisions are relevant,
-  and what the **blast radius** of the signal looks like.
-
-Always include the owner of the task in the response.
-Stay focused on graph-level context; do not duplicate the EvidenceAnalyst's quotes
-or the ProcessStateAnalyst's status breakdown."""
 
 
 async def register_context_research_agent(
@@ -41,12 +25,16 @@ async def register_context_research_agent(
     mcp_client = MCPClient()
     tools = await mcp_client.get_tools(include=CONTEXT_RESEARCH_TOOLS)
 
+    # Fetch the system_message from the YAML registry. Contracts are handled
+    # separately via a Pydantic model and are not part of the system prompt.
+    p = get_prompt_manager().get("context_research_agent")
+
     agent = await AIAgent.register(
         runtime,
         type=agent_topic_type,
         factory=lambda: AIAgent(
             description=description,
-            system_message=SystemMessage(content=SYSTEM_PROMPT),
+            system_message=SystemMessage(content=p.system_message),
             model_client=model_client,
             tools=tools,
             agent_topic_type=agent_topic_type,
